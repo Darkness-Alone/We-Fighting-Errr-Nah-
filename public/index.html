@@ -657,10 +657,10 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     $('conf').textContent = `${d.confidence.label} · ${d.confidence.ok} of ${d.confidence.total} sources reporting`;
     fillTicker($('tick'), d.wire.stories.slice(0, 16).map((s) => `<span><b style="color:${s.calm ? 'var(--blue)' : TIER_TONE[s.tier]}">${esc(s.source.toUpperCase())}</b> ${link(s.url, esc(s.title))}</span>`), 16);
     // OSINT channels on Telegram: latest posts, or links to the channels when none came through.
-    const o = d.osint || { channels: [], posts: [] };
-    fillTicker($('xtick'), o.posts.length
-      ? o.posts.map((p) => `<span><b style="color:var(--blue)">${esc(p.user.toUpperCase())}</b> ${link(p.url, esc(p.text))} <span class="note">${ago(p.time)}</span></span>`)
-      : o.channels.map((c) => `<span>${link('https://t.me/' + encodeURIComponent(c.name), '<b style="color:var(--blue)">' + esc(c.label) + '</b>')} <span class="note">tap to open</span></span>`), 14);
+    const feed = d.osint || { channels: [], posts: [] };
+    fillTicker($('xtick'), feed.posts.length
+      ? feed.posts.map((p) => `<span><b style="color:var(--blue)">${esc(p.user.toUpperCase())}</b> ${link(p.url, esc(p.text))} <span class="note">${ago(p.time)}</span></span>`)
+      : feed.channels.map((c) => `<span>${link('https://t.me/' + encodeURIComponent(c.name), '<b style="color:var(--blue)">' + esc(c.label) + '</b>')} <span class="note">tap to open</span></span>`), 14);
     freshness();
   }
 
