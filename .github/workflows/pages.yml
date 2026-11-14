@@ -1,4 +1,4 @@
-# Publishes the dashboard to GitHub Pages and refreshes the reading every 15 minutes.
+# Publishes the dashboard to GitHub Pages and takes a fresh reading four times an hour.
 # One-time setup: repo Settings → Pages → Source: "GitHub Actions".
 name: We Beefin Index
 
@@ -6,7 +6,9 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '*/15 * * * *'
+    # Deliberately off the quarter-hours. GitHub delays or drops scheduled runs at busy
+    # minutes like :00 and :15, and "every 15 minutes" was firing only a few times a day.
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -32,11 +34,14 @@ jobs:
       - run: node --test
       - id: pages
         uses: actions/configure-pages@v5
+      - name: Explain a Pages failure
+        if: failure() && steps.pages.outcome == 'failure'
+        run: echo "::error::GitHub Pages is not set to deploy from Actions. Open Settings > Pages and set Source to GitHub Actions."
       - name: Take a reading
         run: node collect.mjs
         env:
-          # Carries the 7-day trend over from the copy that is already live.
-          PREV_URL: ${{ steps.pages.outputs.base_url }}/data.json
+          # The live copy holds the collector's memory (24h of event data, the 7-day trend, the last index).
+          PREV_URL: ${{ steps.pages.outputs.base_url }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
