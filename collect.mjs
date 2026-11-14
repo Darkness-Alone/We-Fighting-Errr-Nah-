@@ -83,7 +83,7 @@ export async function collect(now = Date.now()) {
 
   // ---- fetch everything at once
   const feedJobs = src.FEEDS.map((f) => src.fetchFeed(f).then((items) => ({ f, items }), (err) => ({ f, err })));
-  const [latest, feeds, quakes, nukeTests, kp, sky, money, advisories] = await Promise.all([
+  const [latest, feeds, quakes, nukeTests, kp, sky, money, advisories, xFeed] = await Promise.all([
     attempt('GDELT', () => src.fetchGdeltLatest(gd.GDELT_BASE), sources, () => ''),
     Promise.all(feedJobs),
     attempt('USGS earthquakes', src.fetchQuakes, sources),
@@ -92,6 +92,7 @@ export async function collect(now = Date.now()) {
     attempt('adsb.lol military aircraft', src.fetchSky, sources, (v) => `${v.airborne} airborne`),
     attempt('FRED markets', () => src.fetchMoney(now), sources, (v) => Object.keys(v).join(', ')),
     attempt('State Dept advisories', () => src.fetchAdvisories(now), sources, (v) => `${v.total} countries`),
+    attempt('OSINT accounts on X', () => src.fetchXPosts(now), sources, (v) => `${v.posts.length} posts from ${v.answered} of ${src.X_ACCOUNTS.length} accounts`),
   ]);
 
   // ---- GDELT: bring the 24h store up to date
@@ -279,6 +280,7 @@ export async function collect(now = Date.now()) {
     sky: sky || null,
     money: money || null,
     advisories: advisories || null,
+    x: { accounts: src.X_ACCOUNTS, posts: xFeed ? xFeed.posts : [] },
     nature: { quakes: (quakes || []).slice(0, 5), kp: kp || null },
     gdelt: gdeltOk ? { latest: gd.stampToMs(store.latest), events: day.n, hours: day.hours } : null,
     sources,
