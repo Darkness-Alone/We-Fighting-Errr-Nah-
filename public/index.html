@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>We Beefin Index</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: one scanning column on a phone; hero gauge + posture ladder side by side on desktop,
+   then two-column instrument panels. A single committed night-watch look, by choice. */
+:root {
+  color-scheme: dark;
+  --bg: #06090d;
+  --panel: #0c1219;
+  --panel-2: #111a24;
+  --line: #1d2a3a;
+  --fg: #d5e0ee;
+  --muted: #7f91a8;
+  --green: #32d373;
+  --yellow: #f3c12c;
+  --orange: #f6862b;
+  --red: #f24a40;
+  --blue: #5aa9ff;
+  --display: "Chakra Petch", "Arial Narrow", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 36px;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 400 14px/1.5 var(--mono); font-variant-numeric: tabular-nums;
+}
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.wrap {
+  max-width: 1180px; margin: 0 auto; padding-block: var(--s4) var(--s6);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: var(--s4);
+}
+.eyebrow { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin: 0; }
+h1, h2 { font-family: var(--display); margin: 0; text-wrap: balance; }
+
+/* top bar */
+.bar { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.bar strong { font-family: var(--display); font-size: 16px; letter-spacing: .08em; color: var(--fg); }
+.live { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+.dot.stale { background: var(--orange); animation: none; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+/* tickers */
+.ticker { border-block: 1px solid var(--line); background: var(--panel); overflow: hidden; display: flex; align-items: stretch; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))) calc(-1 * max(16px, env(safe-area-inset-right, 0px))); }
+.ticker .tag { flex: none; padding: 6px 10px; font-size: 11px; letter-spacing: .15em; font-weight: 700; background: var(--panel-2); border-right: 1px solid var(--line); z-index: 1; }
+.ticker .lane { overflow: hidden; flex: 1; min-width: 0; }
+.ticker .run { display: inline-flex; gap: var(--s6); white-space: nowrap; padding: 6px 0 6px var(--s4); font-size: 12.5px; animation: scroll var(--dur, 90s) linear infinite; }
+.ticker:hover .run { animation-play-state: paused; }
+.ticker .item b { font-weight: 700; }
+@keyframes scroll { to { transform: translateX(-50%); } }
+
+/* panels */
+.grid { display: grid; gap: var(--s4); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 880px) { .grid.two { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); } .grid.even { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.panel { border: 1px solid var(--line); background: var(--panel); padding: var(--s4); display: flex; flex-direction: column; gap: var(--s3); min-width: 0; }
+.panel > header { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); flex-wrap: wrap; }
+.panel h2 { font-size: 15px; letter-spacing: .12em; text-transform: uppercase; }
+.note { color: var(--muted); font-size: 12px; margin: 0; }
+
+/* hero */
+.hero { align-items: center; text-align: center; background: radial-gradient(120% 90% at 50% 100%, var(--panel-2), var(--panel)); }
+.hero h1 { font-size: clamp(26px, 6.2vw, 44px); line-height: 1.1; }
+.hero h1 span { color: var(--tone, var(--fg)); }
+.gauge { width: 100%; max-width: 560px; height: auto; display: block; }
+.gauge text { font-family: var(--mono); }
+.parts { width: 100%; max-width: 560px; display: grid; gap: var(--s2); text-align: left; }
+.meter { display: grid; grid-template-columns: 9.5em minmax(0, 1fr) 2.6em; gap: var(--s2); align-items: center; font-size: 12px; }
+.meter .track { height: 8px; background: var(--panel-2); border: 1px solid var(--line); }
+.meter .fill { height: 100%; background: var(--tone, var(--blue)); }
+.meter .val { text-align: right; }
+
+/* posture ladder */
+.ladder { display: grid; gap: 6px; }
+.rung { display: grid; grid-template-columns: 2.4em minmax(0, 1fr); gap: var(--s3); align-items: center; padding: 8px 10px; border: 1px solid var(--line); color: var(--muted); }
+.rung .n { font-family: var(--display); font-size: 22px; text-align: center; }
+.rung .nm { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 12.5px; }
+.rung .bl { font-size: 12px; display: none; }
+.rung.on { color: var(--bg); background: var(--tone); border-color: var(--tone); }
+.rung.on .bl { display: block; }
+.con-big { font-family: var(--display); font-size: clamp(30px, 7vw, 46px); line-height: 1; color: var(--tone); }
+
+/* clocks */
+.clocks { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.clock { border: 1px solid var(--line); padding: var(--s3); background: var(--panel-2); display: grid; gap: 2px; }
+.clock .t { font-family: var(--display); font-size: 34px; line-height: 1.1; }
+.clock .k { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+/* theater board */
+.beef { display: grid; grid-template-columns: minmax(0, 1fr) 3em; gap: 2px var(--s3); align-items: center; }
+.beef .nm { font-weight: 700; }
+.beef .sub { color: var(--muted); font-size: 11.5px; grid-column: 1 / -1; }
+.beef .track { grid-column: 1 / -1; height: 10px; background: var(--panel-2); border: 1px solid var(--line); }
+.beef .fill { height: 100%; }
+.beef .val { text-align: right; }
+.stack { display: grid; gap: var(--s3); }
+
+/* tables + lists */
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+th, td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.num, th.num { text-align: right; white-space: nowrap; padding-right: 0; padding-left: 8px; }
+td.q { min-width: 190px; }
+.chip { display: inline-block; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; padding: 1px 6px; border: 1px solid currentColor; white-space: nowrap; }
+.up { color: var(--red); } .down { color: var(--green); } .flat { color: var(--muted); }
+.wire { list-style: none; margin: 0; padding: 0; display: grid; }
+.wire li { display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: var(--s2); padding: 8px 0; border-bottom: 1px solid var(--line); }
+.wire .lv { font-weight: 700; text-align: center; }
+.wire .meta { color: var(--muted); font-size: 11.5px; }
+.tabs { display: flex; gap: 6px; }
+.tabs button { font: inherit; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; background: none; color: var(--muted); border: 1px solid var(--line); padding: 4px 10px; cursor: pointer; }
+.tabs button[aria-pressed="true"] { color: var(--bg); background: var(--fg); border-color: var(--fg); }
+.more { align-self: flex-start; font: inherit; font-size: 12px; background: none; color: var(--blue); border: 0; padding: 0; cursor: pointer; }
+.spark { width: 100%; height: auto; display: block; }
+.srcs { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; margin: 0; padding: 0; list-style: none; }
+.srcs .ok::before { content: "● "; color: var(--green); }
+.srcs .bad::before { content: "● "; color: var(--red); }
+.method { max-width: 68ch; display: grid; gap: var(--s2); color: var(--muted); font-size: 12.5px; }
+.method p { margin: 0; }
+.method b { color: var(--fg); font-weight: 500; }
+.c-green { --tone: var(--green); } .c-yellow { --tone: var(--yellow); } .c-orange { --tone: var(--orange); } .c-red { --tone: var(--red); }
+.empty { color: var(--muted); padding: var(--s4) 0; }
+@media (prefers-reduced-motion: reduce) {
+  .ticker .run { animation: none; } .ticker .lane { overflow-x: auto; } .dot { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <strong>WE FIGHTING? ERRR… NAH</strong>
+    <span id="utc">--:--:-- UTC</span>
+    <span class="live"><span class="dot" id="dot"></span><span id="fresh">Loading feeds…</span></span>
+  </div>
+
+  <div class="ticker" aria-label="Headline ticker"><span class="tag" style="color:var(--red)">WIRE</span><div class="lane"><div class="run" id="tick-news"></div></div></div>
+
+  <div class="grid two">
+    <section class="panel hero" id="hero">
+      <p class="eyebrow">We Beefin Index</p>
+      <h1>Status: <span id="status">…</span></h1>
+      <svg class="gauge" id="gauge" viewBox="0 0 400 222" role="img" aria-label="We Beefin Index gauge"></svg>
+      <div class="parts" id="parts"></div>
+      <p class="note">A 0–100 read on how close the world is to throwing hands, from live prediction-market odds and the news wire.</p>
+    </section>
+
+    <section class="panel" id="conpanel">
+      <header><h2>TheseHandsCon</h2><span class="note">OSINT estimate · not an official alert level</span></header>
+      <div class="con-big" id="conbig">…</div>
+      <div class="ladder" id="ladder"></div>
+    </section>
+  </div>
+
+  <div class="ticker" aria-label="Market ticker"><span class="tag" style="color:var(--yellow)">ODDS</span><div class="lane"><div class="run" id="tick-mkts"></div></div></div>
+
+  <div class="grid even">
+    <section class="panel">
+      <header><h2>Doomsday Watch</h2><span class="note">Time on the clock, midnight = it happened</span></header>
+      <div class="clocks" id="clocks"></div>
+      <div id="trend"></div>
+    </section>
+    <section class="panel">
+      <header><h2>Who Beefin</h2><span class="note">Heat by theater, hottest = 100</span></header>
+      <div class="stack" id="theaters"></div>
+    </section>
+  </div>
+
+  <div class="grid two">
+    <section class="panel">
+      <header><h2>The Odds Board</h2><span class="note" id="mkcount"></span></header>
+      <div class="scroll"><table><thead><tr><th>Market</th><th>Type</th><th class="num">Beef odds</th><th class="num">24h</th></tr></thead><tbody id="mkts"></tbody></table></div>
+      <button class="more" id="mkmore" hidden>Show all markets</button>
+      <p class="note">Beef odds = the chance things get worse. For ceasefire and peace-deal markets that is the chance it does <em>not</em> hold or happen.</p>
+    </section>
+    <section class="panel">
+      <header><h2>The Wire</h2>
+        <div class="tabs"><button id="tab-hot" aria-pressed="true">Smoke only</button><button id="tab-all" aria-pressed="false">Everything</button></div>
+      </header>
+      <ul class="wire" id="wire"></ul>
+    </section>
+  </div>
+
+  <div class="grid even">
+    <section class="panel">
+      <header><h2>Mother Nature's Hands</h2><span class="note">Shown for awareness, not counted in the index</span></header>
+      <div class="stack" id="nature"></div>
+    </section>
+    <section class="panel">
+      <header><h2>Sources &amp; Method</h2></header>
+      <ul class="srcs" id="srcs"></ul>
+      <div class="method">
+        <p><b>Index</b> = 60% markets + 40% news. Markets: up to 28 live geopolitical markets, weighted by severity (nuclear &gt; invasion &gt; strikes) and 24h trading volume, blended with the three hottest odds so one market popping off moves the needle. News: war-and-weapons keywords in the last 48h of headlines, newest counted most.</p>
+        <p><b>TheseHandsCon</b> steps up every 20 index points (5 below 20, 1 at 80+), and tightens one extra step if nuclear chatter passes 25.</p>
+        <p><b>Beef Clock</b> is this site's own conversion of the index into minutes to midnight. The official Doomsday Clock is set once a year by the Bulletin of the Atomic Scientists.</p>
+        <p>For entertainment and situational awareness. Real DEFCON levels are classified; nothing here is one.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>/*SNAPSHOT*/</script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const safeUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : '#');
+  const link = (u, text) => `<a href="${esc(safeUrl(u))}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  const pct = (x) => (x * 100 < 1 && x > 0 ? '<1' : Math.round(x * 100)) + '%';
+  const TONE = { green: 'var(--green)', yellow: 'var(--yellow)', orange: 'var(--orange)', red: 'var(--red)' };
+  const CON_TONE = { 5: 'green', 4: 'yellow', 3: 'yellow', 2: 'orange', 1: 'red' };
+  const TIER_TONE = ['var(--muted)', 'var(--muted)', 'var(--yellow)', 'var(--orange)', 'var(--red)', 'var(--red)'];
+  const KIND = { escalation: 'Smoke', breakdown: 'Truce watch', thaw: 'Peace watch' };
+  let data = null, wireAll = false, mkAll = false;
+
+  function ago(t) {
+    const m = Math.max(0, Math.round((Date.now() - t) / 60000));
+    if (m < 1) return 'just now';
+    if (m < 60) return m + 'm ago';
+    const h = Math.round(m / 60);
+    return h < 48 ? h + 'h ago' : Math.round(h / 24) + 'd ago';
+  }
+
+  // ---- gauge: four equal segments, needle mapped piecewise across the real thresholds
+  const CX = 200, CY = 204, RO = 184, RI = 116;
+  const pt = (f, r) => [CX + r * Math.cos(Math.PI * (1 - f)), CY - r * Math.sin(Math.PI * (1 - f))];
+  const arc = (f0, f1, r, sweep) => { const [x, y] = pt(f1, r); return `A ${r} ${r} 0 0 ${sweep} ${x.toFixed(2)} ${y.toFixed(2)}`; };
+  function frac(index, st) {
+    for (let k = 0; k < st.length; k++) {
+      if (index <= st[k].max || k === st.length - 1) return (k + (index - st[k].min) / (st[k].max - st[k].min)) / st.length;
+    }
+  }
+  function lines(label) {
+    const w = label.toUpperCase().split(' ');
+    if (w.length <= 2) return [w.join(' ')];
+    if (w.length === 3) return [w[0], w.slice(1).join(' ')];
+    const out = [[], [], []];
+    w.forEach((x, i) => out[Math.min(2, Math.floor((i * 3) / w.length))].push(x));
+    return out.map((a) => a.join(' ')).filter(Boolean);
+  }
+  function drawGauge(d) {
+    const st = d.scales.statuses, n = st.length, gap = 0.006;
+    let s = '<defs>';
+    const body = [];
+    st.forEach((b, k) => {
+      const f0 = k / n + gap, f1 = (k + 1) / n - gap, on = d.status && d.status.key === b.key, c = TONE[b.color];
+      const [ox, oy] = pt(f0, RO), [ix, iy] = pt(f1, RI);
+      body.push(`<path d="M ${ox.toFixed(2)} ${oy.toFixed(2)} ${arc(f0, f1, RO, 1)} L ${ix.toFixed(2)} ${iy.toFixed(2)} ${arc(f1, f0, RI, 0)} Z" fill="${c}" fill-opacity="${on ? 0.34 : 0.1}" stroke="${c}" stroke-width="${on ? 2.5 : 1.5}"/>`);
+      const ls = lines(b.label), step = 15, mid = (RO + RI) / 2 + ((ls.length - 1) * step) / 2 - 4;
+      ls.forEach((t, j) => {
+        const r = mid - j * step, [x, y] = pt(f0, r), id = `gl${k}_${j}`;
+        s += `<path id="${id}" d="M ${x.toFixed(2)} ${y.toFixed(2)} ${arc(f0, f1, r, 1)}" fill="none"/>`;
+        body.push(`<text font-size="11.5" font-weight="${on ? 700 : 500}" fill="${on ? 'var(--fg)' : c}" letter-spacing=".6"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(t)}</textPath></text>`);
+      });
+    });
+    s += '</defs>' + body.join('');
+    [0, ...st.map((b) => b.max)].forEach((v, k) => {
+      const f = k / n, [x1, y1] = pt(f, RI - 4), [x2, y2] = pt(f, RI - 12), [tx, ty] = pt(f, RI - 24);
+      s += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--muted)" stroke-width="1.5"/>`;
+      s += `<text x="${tx.toFixed(1)}" y="${(ty + 4).toFixed(1)}" font-size="10" fill="var(--muted)" text-anchor="middle">${v}</text>`;
+    });
+    if (d.index != null) {
+      const c = TONE[d.status.color], deg = 180 * frac(d.index, st) - 90;
+      s += `<polygon points="${CX - 5},${CY} ${CX + 5},${CY} ${CX},${CY - RO + 6}" fill="${c}" transform="rotate(${deg.toFixed(2)} ${CX} ${CY})"/>`;
+      s += `<path d="M ${CX - 62} ${CY} A 62 62 0 0 1 ${CX + 62} ${CY} Z" fill="var(--panel-2)" stroke="${c}" stroke-width="1.5"/>`;
+      s += `<text x="${CX}" y="${CY - 8}" font-size="50" font-weight="700" text-anchor="middle" fill="${c}" style="font-family:var(--display)">${d.index}</text>`;
+    }
+    $('gauge').innerHTML = s;
+  }
+
+  function meter(label, v, tone) {
+    return `<div class="meter"><span>${label}</span><div class="track"><div class="fill" style="width:${v ?? 0}%;background:${tone}"></div></div><span class="val">${v ?? '–'}</span></div>`;
+  }
+
+  function hms(secondsToMidnight) {
+    const s = 86400 - secondsToMidnight;
+    const p = (n) => String(n).padStart(2, '0');
+    return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
+  }
+  function toMidnight(sec) { return sec >= 120 ? `${Math.floor(sec / 60)} min ${sec % 60} s to midnight` : `${sec} seconds to midnight`; }
+
+  function drawTrend(d) {
+    const h = d.history || [];
+    if (h.length < 2) { $('trend').innerHTML = '<p class="note">Trend line starts drawing after the second reading. History builds up to 7 days.</p>'; return; }
+    const W = 520, H = 110, t0 = h[0].t, t1 = h[h.length - 1].t, x = (t) => 4 + ((t - t0) / (t1 - t0 || 1)) * (W - 40), y = (v) => H - 6 - (v / 100) * (H - 14);
+    let s = '';
+    d.scales.statuses.slice(0, -1).forEach((b) => {
+      s += `<line x1="4" x2="${W - 36}" y1="${y(b.max)}" y2="${y(b.max)}" stroke="var(--line)" stroke-dasharray="3 4"/><text x="${W - 32}" y="${y(b.max) + 3}" font-size="9" fill="var(--muted)" font-family="var(--mono)">${b.max}</text>`;
+    });
+    const pts = h.map((p) => `${x(p.t).toFixed(1)},${y(p.i).toFixed(1)}`);
+    const tone = TONE[d.status.color];
+    s += `<polygon points="${x(t0)},${y(0)} ${pts.join(' ')} ${x(t1)},${y(0)}" fill="${tone}" fill-opacity=".12"/><polyline points="${pts.join(' ')}" fill="none" stroke="${tone}" stroke-width="2"/>`;
+    s += `<circle cx="${x(t1)}" cy="${y(h[h.length - 1].i)}" r="3.5" fill="${tone}"/>`;
+    const lo = Math.min(...h.map((p) => p.i)), hi = Math.max(...h.map((p) => p.i));
+    $('trend').innerHTML = `<p class="eyebrow" style="margin-bottom:6px">Index trend · ${ago(t0).replace(' ago', '')} · low ${lo} · high ${hi}</p><svg class="spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="Index trend">${s}</svg>`;
+  }
+
+  function drawWire(d) {
+    const list = d.headlines.filter((h) => wireAll || h.tier > 0).slice(0, 14);
+    $('wire').innerHTML = list.length
+      ? list.map((h) => `<li><span class="lv" style="color:${TIER_TONE[h.tier]}" title="Smoke level ${h.tier} of 5">${h.tier || '·'}</span><div>${link(h.url, esc(h.title))}<div class="meta">${esc(h.source)} · ${ago(h.time)}</div></div></li>`).join('')
+      : '<li class="empty" style="display:block">No smoke on the wire right now.</li>';
+    $('tab-hot').setAttribute('aria-pressed', String(!wireAll));
+    $('tab-all').setAttribute('aria-pressed', String(wireAll));
+  }
+
+  function chg(v) {
+    const p = Math.round(v * 100);
+    if (!p) return '<span class="flat">–</span>';
+    return `<span class="${p > 0 ? 'up' : 'down'}">${p > 0 ? '▲' : '▼'} ${Math.abs(p)}</span>`;
+  }
+  function drawMarkets(d) {
+    const sorted = [...d.markets].sort((a, b) => b.risk - a.risk);
+    const list = mkAll ? sorted : sorted.slice(0, 10);
+    $('mkts').innerHTML = list.map((m) => `<tr><td class="q">${link(m.url, esc(m.title))}</td><td><span class="chip" style="color:${m.kind === 'escalation' ? 'var(--orange)' : 'var(--blue)'}">${KIND[m.kind]}</span></td><td class="num"><b>${pct(m.risk)}</b></td><td class="num">${chg(m.riskChange24h)}</td></tr>`).join('')
+      || '<tr><td colspan="4" class="empty">Market feed is down. The index is running on news alone.</td></tr>';
+    $('mkcount').textContent = d.markets.length ? `${d.markets.length} markets tracked · Polymarket` : '';
+    $('mkmore').hidden = sorted.length <= 10;
+    $('mkmore').textContent = mkAll ? 'Show top 10' : `Show all ${sorted.length} markets`;
+  }
+
+  function fillTicker(el, items, perItem) {
+    if (!items.length) { el.innerHTML = '<span class="item">No signal.</span>'; return; }
+    const html = items.join('');
+    el.innerHTML = html + html; // doubled so the loop is seamless
+    el.style.setProperty('--dur', Math.max(30, items.length * perItem) + 's');
+  }
+
+  function render(d) {
+    data = d;
+    if (d.index == null) {
+      $('status').textContent = 'No Signal';
+      $('fresh').textContent = 'Every feed failed. Retrying.';
+      $('dot').classList.add('stale');
+      $('srcs').innerHTML = d.sources.map((s) => `<li class="${s.ok ? 'ok' : 'bad'}">${esc(s.name)}</li>`).join('');
+      return;
+    }
+    const tone = d.status.color;
+    $('hero').className = 'panel hero c-' + tone;
+    $('status').textContent = d.status.label;
+    document.title = `${d.index} · ${d.status.label} · We Beefin Index`;
+    drawGauge(d);
+    $('parts').innerHTML = meter('Market odds', d.components.markets, TONE[tone]) + meter('News smoke', d.components.news, TONE[tone]) + meter('Nuke chatter', d.components.nuke, 'var(--red)');
+
+    const ct = CON_TONE[d.handsCon.level];
+    $('conpanel').className = 'panel c-' + ct;
+    $('conbig').textContent = `TheseHandsCon ${d.handsCon.level}`;
+    $('ladder').innerHTML = [...d.scales.handsCon].reverse().map((r) => `<div class="rung${r.level === d.handsCon.level ? ' on' : ''}"><span class="n">${r.level}</span><div><div class="nm">${esc(r.name)}</div><div class="bl">${esc(r.blurb)}</div></div></div>`).join('');
+
+    const o = d.doomsday.official, b = d.doomsday.beefSeconds;
+    $('clocks').innerHTML =
+      `<div class="clock"><span class="k">Beef Clock · live</span><span class="t" style="color:${TONE[tone]}">${hms(b)}</span><span class="note">${toMidnight(b)}</span></div>` +
+      `<div class="clock"><span class="k">Doomsday Clock · official</span><span class="t">${hms(o.seconds)}</span><span class="note">${toMidnight(o.seconds)} · set ${esc(o.setOn)} by the ${esc(o.source)}</span></div>`;
+    drawTrend(d);
+
+    $('theaters').innerHTML = d.theaters.map((t) => {
+      const c = t.heat >= 75 ? 'var(--red)' : t.heat >= 45 ? 'var(--orange)' : t.heat >= 20 ? 'var(--yellow)' : 'var(--green)';
+      return `<div class="beef"><span class="nm">${esc(t.name)}</span><span class="val">${t.heat}</span><div class="track"><div class="fill" style="width:${t.heat}%;background:${c}"></div></div><span class="sub">${t.markets} market${t.markets === 1 ? '' : 's'} · ${t.headlines} headline${t.headlines === 1 ? '' : 's'}</span></div>`;
+    }).join('') || '<p class="empty">Nobody beefin. Enjoy it.</p>';
+
+    drawMarkets(d);
+    drawWire(d);
+
+    const q = d.nature.quakes || [], kp = d.nature.kp;
+    const storm = kp ? (kp.kp >= 7 ? 'Severe geomagnetic storm' : kp.kp >= 5 ? 'Geomagnetic storm' : kp.kp >= 4 ? 'Unsettled' : 'Quiet') : null;
+    $('nature').innerHTML =
+      (kp ? `<div><div class="eyebrow">Space weather · NOAA</div><div>Planetary Kp <b>${kp.kp.toFixed(1)}</b> · ${storm} · 24h peak ${kp.max24h.toFixed(1)}</div></div>` : '') +
+      `<div><div class="eyebrow">Significant earthquakes, past 7 days · USGS</div>${q.length ? q.map((e) => `<div>${link(e.url, esc(e.title))} <span class="note">· ${ago(e.time)}</span></div>`).join('') : '<div class="note">None logged this week.</div>'}</div>`;
+
+    $('srcs').innerHTML = d.sources.map((s) => `<li class="${s.ok ? 'ok' : 'bad'}" title="${esc(s.ok ? 'OK' : s.error)}">${esc(s.name)}${s.ok ? (s.cached ? ' (cached)' : '') : ' (down)'}</li>`).join('');
+
+    fillTicker($('tick-news'), d.headlines.filter((h) => h.tier > 0).slice(0, 20).map((h) => `<span class="item"><b style="color:${TIER_TONE[h.tier]}">${esc(h.source.toUpperCase())}</b> ${link(h.url, esc(h.title))}</span>`), 7);
+    fillTicker($('tick-mkts'), [...d.markets].sort((a, b) => b.vol24h - a.vol24h).slice(0, 20).map((m) => `<span class="item">${link(m.url, esc(m.title))} <b>${pct(m.risk)}</b> ${chg(m.riskChange24h)}</span>`), 6);
+    freshness();
+  }
+
+  function freshness() {
+    if (!data || data.index == null) return;
+    const stale = Date.now() - data.generatedAt > 45 * 60000;
+    $('dot').classList.toggle('stale', stale || !!window.__SNAPSHOT__);
+    $('fresh').textContent = (window.__SNAPSHOT__ ? 'Snapshot · ' : stale ? 'Stale · ' : 'Live · ') + 'read ' + ago(data.generatedAt);
+  }
+
+  async function load() {
+    if (window.__SNAPSHOT__) return render(window.__SNAPSHOT__);
+    try {
+      const r = await fetch('data.json?' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      render(await r.json());
+    } catch {
+      if (!data) $('fresh').textContent = 'No reading yet. Run the collector, then reload.';
+      $('dot').classList.add('stale');
+    }
+  }
+
+  $('tab-hot').onclick = () => { wireAll = false; drawWire(data); };
+  $('tab-all').onclick = () => { wireAll = true; drawWire(data); };
+  $('mkmore').onclick = () => { mkAll = !mkAll; drawMarkets(data); };
+  setInterval(() => { $('utc').textContent = new Date().toISOString().slice(11, 19) + ' UTC'; freshness(); }, 1000);
+  load();
+  if (!window.__SNAPSHOT__) setInterval(load, 60000);
+})();
+</script>
+</body>
+</html>
