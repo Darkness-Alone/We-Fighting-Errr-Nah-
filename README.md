@@ -36,8 +36,8 @@ Birds Up, The Money and Do Not Pull Up List appear only when their feed answers.
 | --- | --- | --- |
 | 0–24 | We Cool | Green |
 | 25–54 | Why They Lookin At Me | Yellow |
-| 55–79 | Squared Up | Orange |
-| 80–100 | Told Ya Too Watch Ya Mouth | Red |
+| 55–79 | Square Up | Orange |
+| 80–100 | Told Ya To Watch Ya Mouth | Red |
 
 A status tightens the moment the index crosses a line. It relaxes only once the index is 2 points
 clear of the line, so the label does not flicker at a boundary.

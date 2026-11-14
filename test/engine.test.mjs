@@ -252,9 +252,9 @@ test('status bands and TheseHandsCon levels', () => {
   assert.equal(sc.statusFor(0).label, 'We Cool');
   assert.equal(sc.statusFor(24).label, 'We Cool');
   assert.equal(sc.statusFor(25).label, 'Why They Lookin At Me');
-  assert.equal(sc.statusFor(55).label, 'Squared Up');
-  assert.equal(sc.statusFor(80).label, 'Told Ya Too Watch Ya Mouth');
-  assert.equal(sc.statusFor(100).label, 'Told Ya Too Watch Ya Mouth');
+  assert.equal(sc.statusFor(55).label, 'Square Up');
+  assert.equal(sc.statusFor(80).label, 'Told Ya To Watch Ya Mouth');
+  assert.equal(sc.statusFor(100).label, 'Told Ya To Watch Ya Mouth');
   assert.equal(sc.statusFor(24, 'lookin').key, 'lookin'); // one point under the line: label holds
   assert.equal(sc.statusFor(22, 'lookin').key, 'cool'); // clearly under: relaxes
   assert.equal(sc.statusFor(56, 'lookin').key, 'squared'); // heating up is immediate
