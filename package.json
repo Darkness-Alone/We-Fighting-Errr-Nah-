@@ -1,6 +1,6 @@
 {
   "name": "we-beefin-index",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "description": "Personal OSINT tension tracker: We Beefin Index, TheseHandsCon, doomsday watch.",
@@ -9,6 +9,7 @@
     "start": "node server.mjs",
     "collect": "node collect.mjs",
     "snapshot": "node collect.mjs && node scripts/snapshot.mjs",
+    "calibrate": "node scripts/calibrate.mjs",
     "test": "node --test"
   }
 }

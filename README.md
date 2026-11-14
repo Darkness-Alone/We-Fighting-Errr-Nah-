@@ -1,8 +1,9 @@
-# We Fighting? Errr… Nah
+# We Fighting Errr Nah?
 
-A personal OSINT tension tracker. It reads public news feeds, scores how much smoke is in the
-air, and shows it on one page: a gauge, a readiness level, a doomsday clock and the headlines
-behind the number.
+**Live page: <https://darkness-alone.github.io/We-Fighting-Errr-Nah-/>**
+
+A personal OSINT tension tracker. It reads public data about what the world's militaries, governments
+and newsrooms are doing right now, boils it down to one number, and shows the receipts.
 
 No dependencies, no API keys, no accounts. Just Node.
 
@@ -12,34 +13,128 @@ No dependencies, no API keys, no accounts. Just Node.
 
 | Panel | What it shows |
 | --- | --- |
-| **We Beefin Index** | A 0–100 gauge with a needle and a status |
-| **TheseHandsCon** | An estimated readiness level, 5 (calm) to 1 (it's on) |
-| **Doomsday Watch** | The official Doomsday Clock, a live Beef Clock, and a 7-day trend line |
-| **Who Beefin** | Heat by region: Iran & the Gulf, Russia & Ukraine, China & Taiwan and more |
-| **The Wire** | The headlines driving the number, each with a smoke level 1–5, plus a scrolling ticker |
+| **We Beefin Index** | A 0–100 gauge, its status, the trend, a ghost needle for 24 hours ago, and what went into the number |
+| **TheseHandsCon** | An estimated readiness level, 5 (calm) to 1 (it's on), with the reasons for it |
+| **The Rundown** | The whole picture in four or five sentences, with a copy button |
+| **Where It's Poppin** | A world map of places named in reports of force, plus heat by region |
+| **The Fight Card** | Country-vs-country matchups: how much is talk, how much is flexin', how much is hands |
+| **Doomsday Watch** | The official Doomsday Clock, a live Beef Clock, a nuclear-test check, and every clock setting since 1947 |
+| **Trend & Beef Log** | The index over the last 7 days and every change of status or level |
+| **The Wire** | Headlines grouped into stories, each tagged with a beef type and how many outlets carry it |
+| **Birds Up** | Military aircraft in the air: doomsday planes, bombers, tankers, spy planes, airlift |
+| **The Money** | Wall Street's fear gauge and the oil price |
+| **Do Not Pull Up List** | Countries the US State Department says not to travel to |
 | **Mother Nature's Hands** | Significant earthquakes and space weather. Shown, never scored |
-| **Sources & Method** | A status light per feed and a plain-English method note |
+| **Receipts** | A status light per source, the method, and the back-test table |
+
+Birds Up, The Money and Do Not Pull Up List appear only when their feed answers.
 
 ### We Beefin Index
 
 | Index | Status | Color |
 | --- | --- | --- |
-| 0–29 | We Cool | Green |
-| 30–59 | Why They Lookin At Me | Yellow |
-| 60–84 | Squared Up | Orange |
-| 85–100 | Told Ya Too Watch Ya Mouth | Red |
+| 0–24 | We Cool | Green |
+| 25–54 | Why They Lookin At Me | Yellow |
+| 55–79 | Squared Up | Orange |
+| 80–100 | Told Ya Too Watch Ya Mouth | Red |
+
+A status tightens the moment the index crosses a line. It relaxes only once the index is 2 points
+clear of the line, so the label does not flicker at a boundary.
 
 ### TheseHandsCon
 
-| Level | Name | Index |
+| Level | Name | Posture score |
 | --- | --- | --- |
-| 5 | Hands In Pockets | 0–19 |
-| 4 | Hands On Hips | 20–39 |
-| 3 | Hands Up | 40–59 |
-| 2 | Knuckles Cracked | 60–79 |
+| 5 | Hands In Pockets | 0–23 |
+| 4 | Hands On Hips | 24–41 |
+| 3 | Hands Up | 42–61 |
+| 2 | Knuckles Cracked | 62–79 |
 | 1 | Hands Thrown | 80–100 |
 
-The level tightens one extra step when nuclear chatter passes 25 (about three nuclear headlines).
+The posture score is 60% The Big Dogs and 40% the index, so a regional war moves it less than
+nuclear powers squaring up. Relaxing a level needs the score 3 points clear of the line. Two hard
+triggers override the score: a nuclear test picked up by seismometers forces level 2 or tighter, and
+two nuclear-armed rivals trading blows forces level 3 or tighter.
+
+## How the number is made
+
+The index blends four ingredients. If one has no data, the others take over its share.
+
+| Ingredient | Weight | What it measures |
+| --- | --- | --- |
+| **The Action** | 35% | The share of all world news events GDELT codes as one state using force on another, plus how hard the hottest matchup is going |
+| **The Chatter** | 35% | The share of headlines about fighting, weighted by how bad: 60% the wider press (thousands of sites), 40% front pages of major outlets |
+| **The Big Dogs** | 20% | Friction between nuclear powers and their treaty allies, plus nuclear-weapons talk that is not diplomacy |
+| **The Money** | 10% | The VIX fear gauge and the 5-day move in the oil price |
+
+Details that matter:
+
+- **GDELT is filtered hard.** One 15-minute file is noisy, so the tool keeps 24 hours of them and
+  counts only events between two different countries with state-level actors, by distinct article.
+  Local crime, sports and business "battles" drop out.
+- **Recent hours count more.** Each GDELT score is 60% the last 6 hours and 40% the last 24.
+- **Headlines get a beef type.** Talkin' Spicy (threats), Flexin' (troops, sanctions), Swingin'
+  (strikes, clashes), Full Send (invasions, missile barrages), Nuclear Option. Ceasefires and peace
+  talks count for less; a ceasefire that collapses counts for more. Sports, films, court cases,
+  space launches and history pieces are screened out.
+- **One event counts once.** Headlines about the same thing are grouped into a story, and a story
+  carried by more outlets counts for more.
+- **Matchups have stakes.** US vs Russia or India vs Pakistan weighs 1.0. Russia vs a NATO member
+  or China vs Taiwan weighs 0.8. Iran vs a nuclear power 0.55. One nuclear power in the fight 0.35.
+  Neither 0.15. Allies bickering is left off the card.
+- **The index rises fast and falls slowly.** It closes half the gap to a higher reading in 10
+  minutes and half the gap to a lower one in 45.
+- **The Beef Clock** starts from the official Doomsday Clock and moves with the nuclear reading
+  (nuclear standoffs and nuclear talk): every 30 points hotter halves the time left.
+
+## Calibration
+
+Every curve and band was set by running the live pipeline over GDELT's archive of real days
+(`npm run calibrate`, see `scripts/calibrate.mjs`).
+
+| Day | What happened | Index | TheseHandsCon |
+| --- | --- | --- | --- |
+| 5 Jun 2019 | A quiet day | 23 | 5 |
+| 15 Jun 2021 | A quiet day | 16 | 5 |
+| 9 Aug 2017 | "Fire and fury": US and North Korea trade nuclear threats | 52 | 2 |
+| 27 Feb 2019 | India and Pakistan dogfight over Kashmir | 43 | 3 |
+| 8 Jan 2020 | Iran fires missiles at US bases in Iraq | 73 | 2 |
+| 24 Feb 2022 | Russia invades Ukraine | 80 | 2 |
+| 8 Oct 2023 | Hamas attack, Gaza war begins | 71 | 3 |
+| 14 Apr 2024 | Iran launches missiles and drones at Israel | 84 | 2 |
+| 20 Nov 2024 | Long-range strikes into Russia, Moscow lowers its nuclear threshold | 61 | 2 |
+| 7 May 2025 | India and Pakistan exchange strikes | 50 | 3 |
+
+This back-test uses the GDELT ingredients only. Front pages and markets are not archived the same
+way, so their curves were set by reasoning, not history. One known soft spot: GDELT under-covers
+South Asia, so the India–Pakistan days read lower than they felt.
+
+## Sources
+
+| Source | Used for |
+| --- | --- |
+| GDELT 2.0 event files, English and translated from 65 languages | The Action, the wider-press half of The Chatter, The Big Dogs, the map, the Fight Card |
+| BBC (world plus six regional feeds), Al Jazeera | Front pages, The Wire |
+| The Guardian, NPR, France 24, DW, Sky News, New York Times | Front pages, The Wire |
+| Defense News, Breaking Defense, The War Zone, USNI News, Times of Israel, Kyiv Independent, Yonhap, UN News | The Wire and regional heat |
+| USGS | Significant earthquakes, and its catalog of detected nuclear explosions |
+| NOAA Space Weather Prediction Center | Planetary Kp index |
+| adsb.lol | Military aircraft in the air |
+| FRED (St. Louis Fed) | VIX and Brent crude, daily closes |
+| US State Department | Travel advisories |
+| Bulletin of the Atomic Scientists | Official Doomsday Clock |
+
+Things to know:
+
+- **Tested against the live services:** GDELT, BBC, Al Jazeera, USGS and NOAA.
+- **Not yet tested live:** the other news outlets, adsb.lol, FRED and the State Department. The
+  machine this was built on could not reach them, so they are written to each service's documented
+  format and checked with sample data in `test/`. If one fails it shows under Receipts and its
+  panel hides; nothing else breaks.
+- **The official Doomsday Clock is typed in by hand.** It is `DOOMSDAY_OFFICIAL` at the top of
+  `collect.mjs`. The Bulletin resets it each January; update it then, and add the new year to
+  `DOOMSDAY_TIMELINE` below it.
+- **Birds Up needs a week.** It only judges what is unusual after 48 readings of its own baseline.
 
 ## Run it
 
@@ -49,119 +144,76 @@ You need [Node.js](https://nodejs.org) 20 or newer.
 npm start
 ```
 
-Open <http://localhost:8787>. The server takes a reading right away, then again every 10 minutes.
-The page checks for a new reading every minute.
-
-Other commands:
+Open <http://localhost:8787>. The server takes a reading right away, then every 10 minutes. The
+first reading downloads 24 hours of GDELT files (about 12 MB); after that only the new ones.
 
 ```sh
-npm run collect    # take one reading and write public/data.json
-npm run snapshot   # take a reading and bake it into a single snapshot.html you can open or send
-npm test           # run the scoring tests
+npm run collect    # take one reading: writes public/data.json and public/state.json
+npm run snapshot   # take a reading and bake it into one snapshot.html you can open or send
+npm test           # run the tests
+npm run calibrate -- <folder>   # back-test the scoring on downloaded GDELT files
 ```
-
-Settings, as environment variables:
 
 | Variable | Default | What it does |
 | --- | --- | --- |
 | `PORT` | `8787` | Port the server listens on |
 | `REFRESH_MIN` | `10` | Minutes between readings (minimum 2) |
+| `PREV_URL` | none | Address of a published copy to pick up state from, used by the Pages workflow |
 
-Example: `PORT=3000 REFRESH_MIN=5 npm start`
+## Hosting on GitHub Pages
 
-## Host it free on GitHub Pages
+`.github/workflows/pages.yml` takes a reading and publishes the page on every push to `main` and on
+a schedule (minutes 7, 22, 37 and 52 of each hour). Pages must be set to **Settings → Pages →
+Source → GitHub Actions**.
 
-`.github/workflows/pages.yml` takes a reading every 15 minutes and publishes the page, so you can
-check it from your phone without leaving a computer on.
-
-1. Merge this code into `main`.
-2. In the repo, go to **Settings → Pages** and set **Source** to **GitHub Actions**.
-3. Open the **Actions** tab and run **We Beefin Index** once, or wait for the next 15-minute run.
-
-Each run pulls the trend history from the copy that is already live, so the 7-day line survives
-between runs. GitHub can delay scheduled runs when it is busy, so readings may land a few minutes late.
-
-## Sources
-
-| Feed | Used for |
-| --- | --- |
-| BBC World RSS | Headlines for the index |
-| Al Jazeera RSS | Headlines for the index |
-| GDELT | Extra conflict headlines for the index |
-| USGS | Significant earthquakes, past 7 days |
-| NOAA Space Weather Prediction Center | Planetary Kp index |
-| Bulletin of the Atomic Scientists | Official Doomsday Clock |
-
-Two things to know:
-
-- **GDELT drops out often.** It allows one request every 5 seconds and regularly times out. The last
-  good pull is reused for up to 3 hours. When GDELT is missing, the index reads lower.
-- **The official Doomsday Clock is typed in by hand.** It is the `DOOMSDAY_OFFICIAL` constant at the
-  top of `collect.mjs`. The Bulletin resets it each January; update it then.
-
-## How the number is made
-
-All scoring lives in `lib/score.mjs`.
-
-1. Every headline from the last 48 hours is checked against keyword lists and given a smoke level:
-
-   | Level | Examples |
-   | --- | --- |
-   | 5 | nuclear strike, nuclear test, nukes |
-   | 4 | invasion, declares war, ballistic missile, martial law |
-   | 3 | airstrike, missiles, shelling, drone attack, blockade, troops |
-   | 2 | military, sanctions, coup, clash, militia, war |
-   | 1 | tensions, threat, warns, standoff, escalation |
-
-2. Newer headlines count more: full weight under 6 hours, 60% under 24 hours, 30% under 48 hours.
-3. Headlines about ceasefires, truces and peace deals count half.
-4. The levels are added up into a heat total and curved onto 0–100, so each extra headline moves
-   the needle a little less than the one before.
-
-The **Beef Clock** converts the index into time before midnight: 12 minutes out at 0, midnight at 100.
-
-**Who Beefin** sorts those same headlines by region and scales the hottest region to 100. With few
-headlines in play, one or two stories can put a region on top.
+GitHub treats schedules as best effort and can delay or skip runs, especially on a quiet repo. If
+the page says **Stale**, open the **Actions** tab, pick **We Beefin Index** and press **Run
+workflow**. GitHub also pauses schedules after 60 days without repo activity; the same button
+restarts them.
 
 ## Make it yours
 
-Everything you are likely to change is a table near the top of a file.
-
 | To change | Edit |
 | --- | --- |
-| Status names, colors, index bands | `STATUSES` in `lib/score.mjs` |
+| Status names, colors, bands | `STATUSES` in `lib/score.mjs` |
 | TheseHandsCon names, blurbs, thresholds | `HANDSCON` in `lib/score.mjs` |
-| Regions and the words that map to them | `THEATERS` in `lib/score.mjs` |
-| Which words count as smoke, and how much | `H_TIERS` and `H_CALM` in `lib/score.mjs` |
-| How much news it takes to move the needle | `NEWS_SCALE` in `lib/score.mjs` (lower = jumpier) |
-| News feeds | `RSS_FEEDS` in `lib/sources.mjs` |
+| Ingredient weights | `WEIGHTS` in `lib/score.mjs` |
+| Which words count as which beef type | the `TIER` lists in `lib/classify.mjs` |
+| Regions, country names, matchup stakes | `lib/geo.mjs` |
+| News outlets | `FEEDS` in `lib/sources.mjs` (any RSS or Atom feed) |
 | Ticker speed | the `16` (seconds per headline) in the `fillTicker` call in `public/index.html` |
 | Colors and fonts | the `:root` block at the top of `public/index.html` |
 
-Adding a news feed is one line in `RSS_FEEDS`: an id, a display name and an RSS URL. More feeds make
-the index steadier. If you add several, raise `NEWS_SCALE` so the reading does not drift upward.
+After changing a curve or a word list, run `npm test`, and `npm run calibrate` if you have GDELT
+files to check against.
 
 ## Project layout
 
 ```
-collect.mjs            takes a reading: fetch feeds, score, write public/data.json
+collect.mjs            takes a reading: fetch, score, write data.json and state.json
 server.mjs             serves public/ and re-runs the collector on a timer
-lib/sources.mjs        one fetcher per feed, plus the RSS parser
-lib/score.mjs          all scoring rules and scales (pure functions)
-public/index.html      the whole dashboard: markup, styles and script in one file
+lib/sources.mjs        one fetcher per feed, the feed list, the RSS/Atom parser
+lib/gdelt.mjs          downloads GDELT event files and boils them down
+lib/classify.mjs       reads a headline: beef type, calm or not, nuclear or not; groups stories
+lib/geo.mjs            countries, regions, how much each matchup matters
+lib/score.mjs          every scale and scoring rule (pure functions)
+public/index.html      the whole dashboard in one file
+scripts/calibrate.mjs  back-tests the scoring on archived GDELT days
 scripts/snapshot.mjs   bakes a reading into a standalone HTML file
-test/score.test.mjs    tests for the scoring rules and RSS parser
-.github/workflows/     GitHub Pages publishing, every 15 minutes
+test/                  tests for the classifier, GDELT handling, scoring and feed parsers
+.github/workflows/     GitHub Pages publishing
 ```
 
-`public/data.json` and `snapshot.html` are generated and are not committed.
+`public/data.json`, `public/state.json` and `snapshot.html` are generated and not committed.
 
 ## Troubleshooting
 
-- **"No reading yet"** — the page loaded before the first reading finished. Wait a few seconds and
+- **"No reading yet"**: the page loaded before the first reading finished. Wait a few seconds and
   reload, or run `npm run collect`.
-- **A source shows a red light** — that feed failed on the last reading. The index keeps running on
-  whatever is left. Hover the name for the error.
-- **"No Signal"** — every news feed failed. Check your internet connection.
-- **Behind a corporate proxy** — on Node 22.21 or newer, start with `NODE_USE_ENV_PROXY=1 npm start`
-  so Node honors `HTTPS_PROXY`.
+- **"Stale"**: the reading is more than 45 minutes old. Locally, check the server is running. On
+  GitHub Pages, see the hosting section above.
+- **Sources not reporting**: listed under Receipts with the reason. The index runs on whatever is
+  left and marks the signal as Decent or Weak.
+- **"No Signal"**: every feed failed. Check the internet connection.
+- **Behind a proxy**: on Node 22.21 or newer, start with `NODE_USE_ENV_PROXY=1 npm start` so Node
+  honors `HTTPS_PROXY`.
