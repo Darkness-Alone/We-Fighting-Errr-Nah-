@@ -21,7 +21,7 @@ No dependencies, no API keys, no accounts. Just Node.
 | **Doomsday Watch** | The official Doomsday Clock, a live Beef Clock, a nuclear-test check, and every clock setting since 1947 |
 | **Trend & Beef Log** | The index over the last 7 days and every change of status or level |
 | **The Wire** | Headlines grouped into stories, each tagged with a beef type and how many outlets carry it |
-| **X OSINT scroller** | Latest posts from popular OSINT accounts on X, or links to them when X will not serve the posts. Shown, never scored |
+| **OSINT scroller** | Latest English posts from public OSINT channels on Telegram, or links to them when none come through. Shown, never scored |
 | **Birds Up** | Military aircraft in the air: doomsday planes, bombers, tankers, spy planes, airlift |
 | **The Money** | Wall Street's fear gauge and the oil price |
 | **Do Not Pull Up List** | Countries the US State Department says not to travel to |
@@ -123,7 +123,7 @@ South Asia, so the India–Pakistan days read lower than they felt.
 | adsb.lol | Military aircraft in the air |
 | FRED (St. Louis Fed) | VIX and Brent crude, daily closes |
 | US State Department | Travel advisories |
-| X (public embed timeline) | Posts from the accounts in `X_ACCOUNTS`, for the scroller only |
+| Telegram public channel previews (t.me/s) | Posts from the channels in `TG_CHANNELS`, for the scroller only |
 | Bulletin of the Atomic Scientists | Official Doomsday Clock |
 
 Things to know:
@@ -136,8 +136,8 @@ Things to know:
 - **The official Doomsday Clock is typed in by hand.** It is `DOOMSDAY_OFFICIAL` at the top of
   `collect.mjs`. The Bulletin resets it each January; update it then, and add the new year to
   `DOOMSDAY_TIMELINE` below it.
-- **The X scroller is unofficial.** X has no free API, so it reads the timeline X serves for embedding.
-  X throttles that hard; when it refuses, the scroller shows links to the accounts instead.
+- **The OSINT scroller mixes sides on purpose.** Several channels are partisan or state-linked
+  (IDF, Quds News Network, Rybar, Intel Slava). Their posts are unverified and never scored.
 - **Birds Up needs a week.** It only judges what is unusual after 48 readings of its own baseline.
 
 ## Run it
@@ -185,7 +185,7 @@ restarts them.
 | Which words count as which beef type | the `TIER` lists in `lib/classify.mjs` |
 | Regions, country names, matchup stakes | `lib/geo.mjs` |
 | News outlets | `FEEDS` in `lib/sources.mjs` (any RSS or Atom feed) |
-| OSINT accounts in the X scroller | `X_ACCOUNTS` in `lib/sources.mjs` |
+| Channels in the OSINT scroller | `TG_CHANNELS` in `lib/sources.mjs` |
 | Ticker speed | the `16` (seconds per headline) in the `fillTicker` call in `public/index.html` |
 | Colors and fonts | the `:root` block at the top of `public/index.html` |
 

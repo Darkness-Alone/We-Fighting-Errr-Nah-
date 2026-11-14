@@ -83,7 +83,7 @@ export async function collect(now = Date.now()) {
 
   // ---- fetch everything at once
   const feedJobs = src.FEEDS.map((f) => src.fetchFeed(f).then((items) => ({ f, items }), (err) => ({ f, err })));
-  const [latest, feeds, quakes, nukeTests, kp, sky, money, advisories, xFeed] = await Promise.all([
+  const [latest, feeds, quakes, nukeTests, kp, sky, money, advisories, tgFeed] = await Promise.all([
     attempt('GDELT', () => src.fetchGdeltLatest(gd.GDELT_BASE), sources, () => ''),
     Promise.all(feedJobs),
     attempt('USGS earthquakes', src.fetchQuakes, sources),
@@ -92,15 +92,15 @@ export async function collect(now = Date.now()) {
     attempt('adsb.lol military aircraft', src.fetchSky, sources, (v) => `${v.airborne} airborne`),
     attempt('FRED markets', () => src.fetchMoney(now), sources, (v) => Object.keys(v).join(', ')),
     attempt('State Dept advisories', () => src.fetchAdvisories(now), sources, (v) => `${v.total} countries`),
-    attempt('OSINT accounts on X', () => src.fetchXPosts(now), sources, (v) => `${v.posts.length} posts from ${v.answered} of ${src.X_ACCOUNTS.length} accounts`),
+    attempt('OSINT channels on Telegram', () => src.fetchTelegram(now), sources, (v) => `${v.posts.length} posts (${v.report})`),
   ]);
 
-  // X throttles hard, so a good batch of posts is kept and reused for up to six hours.
-  const xKept = state.x && now - state.x.t < 6 * HOUR ? state.x : null;
-  const xPosts = (xFeed ? xFeed.posts : xKept ? xKept.posts : []).filter((p) => now - p.time < 24 * HOUR);
-  if (!xFeed && xKept) {
-    const s = sources.find((x) => x.name === 'OSINT accounts on X');
-    Object.assign(s, { ok: true, cached: true, note: `refused this time, showing ${xPosts.length} posts from earlier` });
+  // A good batch of channel posts is kept for up to six hours in case Telegram refuses a run.
+  const tgKept = state.tg && now - state.tg.t < 6 * HOUR ? state.tg : null;
+  const tgPosts = (tgFeed ? tgFeed.posts : tgKept ? tgKept.posts : []).filter((p) => now - p.time < 24 * HOUR);
+  if (!tgFeed && tgKept) {
+    const s = sources.find((x) => x.name === 'OSINT channels on Telegram');
+    Object.assign(s, { ok: true, cached: true, note: `no answer this time, showing ${tgPosts.length} posts from earlier` });
   }
 
   // ---- GDELT: bring the 24h store up to date
@@ -288,7 +288,7 @@ export async function collect(now = Date.now()) {
     sky: sky || null,
     money: money || null,
     advisories: advisories || null,
-    x: { accounts: src.X_ACCOUNTS, posts: xPosts },
+    osint: { channels: src.TG_CHANNELS, posts: tgPosts },
     nature: { quakes: (quakes || []).slice(0, 5), kp: kp || null },
     gdelt: gdeltOk ? { latest: gd.stampToMs(store.latest), events: day.n, hours: day.hours } : null,
     sources,
@@ -298,7 +298,7 @@ export async function collect(now = Date.now()) {
   };
 
   const next = {
-    gdelt: store, history: kept, log: log.slice(-12), x: xFeed ? { t: now, posts: xFeed.posts } : state.x,
+    gdelt: store, history: kept, log: log.slice(-12), tg: tgFeed ? { t: now, posts: tgFeed.posts } : state.tg,
     last: index == null ? state.last : { t: now, x: smoothed, status: status.key, con: handsCon?.level },
   };
   return { data, state: next };
