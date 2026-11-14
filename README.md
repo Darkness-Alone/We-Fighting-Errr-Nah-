@@ -186,7 +186,7 @@ restarts them.
 | Regions, country names, matchup stakes | `lib/geo.mjs` |
 | News outlets | `FEEDS` in `lib/sources.mjs` (any RSS or Atom feed) |
 | Channels in the OSINT scroller | `TG_CHANNELS` in `lib/sources.mjs` |
-| Ticker speed | the `16` (seconds per headline) in the `fillTicker` call in `public/index.html` |
+| Ticker speed | `TICKER_SPEED` in `public/index.html` (pixels per second; lower is slower) |
 | Colors and fonts | the `:root` block at the top of `public/index.html` |
 
 After changing a curve or a word list, run `npm test`, and `npm run calibrate` if you have GDELT
