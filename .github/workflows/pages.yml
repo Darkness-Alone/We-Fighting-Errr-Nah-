@@ -10,6 +10,9 @@ on:
     # minutes like :00 and :15, and "every 15 minutes" was firing only a few times a day.
     - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
+  # If Pages is still set to "Deploy from a branch", GitHub also publishes the README as the site on
+  # every push, and it finishes after this workflow. This re-runs the dashboard deploy once that build ends.
+  page_build:
 
 permissions:
   contents: read
