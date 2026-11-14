@@ -196,7 +196,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   </div>
 
   <div class="ticker" aria-label="Headline ticker"><span class="tag">WIRE</span><div class="lane"><div class="run" id="tick"></div></div></div>
-  <div class="ticker" aria-label="Posts from OSINT accounts on X"><span class="tag" style="color:var(--blue)">X&nbsp;OSINT</span><div class="lane"><div class="run" id="xtick"></div></div></div>
+  <div class="ticker" aria-label="Posts from OSINT channels on Telegram"><span class="tag" style="color:var(--blue)">OSINT</span><div class="lane"><div class="run" id="xtick"></div></div></div>
   <div class="alert" id="alert" hidden></div>
 
   <div class="grid two">
@@ -300,7 +300,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     <div class="method">
       <p><b>We Beefin Index</b> blends four ingredients. <b>The Action</b> (35%) is how much of the world's news GDELT codes as one state using force on another, plus how hard the hottest matchup is going. <b>The Chatter</b> (35%) is the share of headlines about fighting, weighted by how bad, across the wider press and the front pages of major outlets. <b>The Big Dogs</b> (20%) is friction between nuclear powers plus nuclear-weapons talk. <b>The Money</b> (10%) is Wall Street's fear gauge and the oil price. A missing ingredient hands its share to the others.</p>
       <p><b>TheseHandsCon</b> leans 60% on The Big Dogs and 40% on the index, so a regional war moves it less than nuclear powers squaring up. Relaxing a level needs the score 3 points clear of the line. A seismically detected nuclear test forces level 2 or tighter.</p>
-      <p><b>X OSINT</b> posts are shown as they come and never counted in any score: they are fast and often unverified.</p>
+      <p><b>OSINT</b> scroller posts come from public Telegram channels, some partisan or state-linked. They are shown as they come and never counted in any score: they are fast and often unverified.</p>
       <p><b>Beef Clock</b> starts from the official Doomsday Clock and moves with the nuclear reading: every 30 points hotter halves the time left. The official clock is set once a year by the Bulletin of the Atomic Scientists.</p>
       <p>The index rises fast and falls slowly on purpose, and a status only relaxes once the index is 2 points clear of the line, so it does not flicker at a boundary. Every curve and band was set against GDELT's archive of real days:</p>
     </div>
@@ -656,11 +656,11 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
 
     $('conf').textContent = `${d.confidence.label} · ${d.confidence.ok} of ${d.confidence.total} sources reporting`;
     fillTicker($('tick'), d.wire.stories.slice(0, 16).map((s) => `<span><b style="color:${s.calm ? 'var(--blue)' : TIER_TONE[s.tier]}">${esc(s.source.toUpperCase())}</b> ${link(s.url, esc(s.title))}</span>`), 16);
-    // OSINT accounts on X: live posts when X lets us read them, otherwise links to the accounts.
-    const x = d.x || { accounts: [], posts: [] };
-    fillTicker($('xtick'), x.posts.length
-      ? x.posts.map((p) => `<span><b style="color:var(--blue)">@${esc(p.user)}</b> ${link(p.url, esc(p.text))} <span class="note">${ago(p.time)}</span></span>`)
-      : x.accounts.map((a) => `<span>${link('https://x.com/' + encodeURIComponent(a), '<b style="color:var(--blue)">@' + esc(a) + '</b>')} <span class="note">tap to open</span></span>`), 14);
+    // OSINT channels on Telegram: latest posts, or links to the channels when none came through.
+    const o = d.osint || { channels: [], posts: [] };
+    fillTicker($('xtick'), o.posts.length
+      ? o.posts.map((p) => `<span><b style="color:var(--blue)">${esc(p.user.toUpperCase())}</b> ${link(p.url, esc(p.text))} <span class="note">${ago(p.time)}</span></span>`)
+      : o.channels.map((c) => `<span>${link('https://t.me/' + encodeURIComponent(c.name), '<b style="color:var(--blue)">' + esc(c.label) + '</b>')} <span class="note">tap to open</span></span>`), 14);
     freshness();
   }
 
