@@ -514,10 +514,13 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     $('press').innerHTML = d.wire.press.map((p) => `<li><div>${link(p.url, esc(p.title))}</div><div class="meta">${p.n} sites, including ${p.sample.map(esc).join(', ')} · ${ago(p.time)}</div></li>`).join('');
   }
 
-  function fillTicker(el, items, perItem) {
+  // Speed is set in screen pixels per second, so long posts and short headlines move equally fast.
+  const TICKER_SPEED = { wire: 44, osint: 26 };
+  function fillTicker(el, items, pxPerSec) {
     if (!items.length) { el.innerHTML = '<span>No smoke on the wire.</span>'; return; }
     el.innerHTML = items.join('') + items.join(''); // doubled so the loop is seamless
-    el.style.setProperty('--dur', Math.max(60, items.length * perItem) + 's');
+    const loop = el.scrollWidth / 2; // one copy of the items
+    el.style.setProperty('--dur', Math.max(60, Math.round((loop || items.length * 700) / pxPerSec)) + 's');
   }
   function favicon(d) {
     try {
@@ -655,12 +658,12 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
       `<div><h3>Significant earthquakes, 7 days · USGS</h3>${q.length ? q.map((e) => `<div>${link(e.url, esc(e.title))} <span class="note">· ${ago(e.time)}</span></div>`).join('') : '<div class="note">None logged this week.</div>'}</div>`;
 
     $('conf').textContent = `${d.confidence.label} · ${d.confidence.ok} of ${d.confidence.total} sources reporting`;
-    fillTicker($('tick'), d.wire.stories.slice(0, 16).map((s) => `<span><b style="color:${s.calm ? 'var(--blue)' : TIER_TONE[s.tier]}">${esc(s.source.toUpperCase())}</b> ${link(s.url, esc(s.title))}</span>`), 16);
+    fillTicker($('tick'), d.wire.stories.slice(0, 16).map((s) => `<span><b style="color:${s.calm ? 'var(--blue)' : TIER_TONE[s.tier]}">${esc(s.source.toUpperCase())}</b> ${link(s.url, esc(s.title))}</span>`), TICKER_SPEED.wire);
     // OSINT channels on Telegram: latest posts, or links to the channels when none came through.
     const feed = d.osint || { channels: [], posts: [] };
     fillTicker($('xtick'), feed.posts.length
       ? feed.posts.map((p) => `<span><b style="color:var(--blue)">${esc(p.user.toUpperCase())}</b> ${link(p.url, esc(p.text))} <span class="note">${ago(p.time)}</span></span>`)
-      : feed.channels.map((c) => `<span>${link('https://t.me/' + encodeURIComponent(c.name), '<b style="color:var(--blue)">' + esc(c.label) + '</b>')} <span class="note">tap to open</span></span>`), 14);
+      : feed.channels.map((c) => `<span>${link('https://t.me/' + encodeURIComponent(c.name), '<b style="color:var(--blue)">' + esc(c.label) + '</b>')} <span class="note">tap to open</span></span>`), TICKER_SPEED.osint);
     freshness();
   }
 
