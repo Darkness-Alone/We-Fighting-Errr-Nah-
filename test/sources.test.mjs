@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseFeed, summarizeAircraft, parseFredCsv, quoteFrom, parseAdvisories, FEEDS } from '../lib/sources.mjs';
+import { parseFeed, summarizeAircraft, parseFredCsv, quoteFrom, parseAdvisories, parseXTimeline, FEEDS } from '../lib/sources.mjs';
 
 test('RSS 2.0: CDATA, entities, junk links', () => {
   const items = parseFeed(`<rss><channel>
@@ -77,4 +77,19 @@ test('State Department advisories', () => {
   assert.equal(a.newLevel4, 1);
   assert.deepEqual(a.fresh.map((f) => f.country), ['Iran', 'Egypt']);
   assert.throws(() => parseAdvisories('<rss></rss>', now));
+});
+
+test('X profile timeline: own recent posts only, links rebuilt from ids', () => {
+  const now = Date.parse('2026-11-14T12:00:00Z');
+  const tweet = (o) => ({ content: { tweet: { id_str: '123', created_at: 'Sat Nov 14 11:00:00 +0000 2026', user: { screen_name: 'sentdefender' }, full_text: 'Explosions reported near the port &amp; airport https://t.co/abc123', ...o } } });
+  const page = (entries) => `<html><script id="__NEXT_DATA__" type="application/json">${JSON.stringify({ props: { pageProps: { timeline: { entries } } } })}</script></html>`;
+  const posts = parseXTimeline(page([
+    tweet({}),
+    tweet({ id_str: '124', retweeted_status: {} }), // a repost
+    tweet({ id_str: '125', created_at: 'Thu Nov 12 11:00:00 +0000 2026' }), // too old
+    tweet({ id_str: 'javascript:1' }), // junk id
+    { content: {} },
+  ]), now);
+  assert.deepEqual(posts, [{ user: 'sentdefender', text: 'Explosions reported near the port & airport', url: 'https://x.com/sentdefender/status/123', time: Date.parse('2026-11-14T11:00:00Z') }]);
+  assert.throws(() => parseXTimeline('<html>rate limited</html>', now));
 });

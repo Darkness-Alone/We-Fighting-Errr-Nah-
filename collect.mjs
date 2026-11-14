@@ -83,7 +83,7 @@ export async function collect(now = Date.now()) {
 
   // ---- fetch everything at once
   const feedJobs = src.FEEDS.map((f) => src.fetchFeed(f).then((items) => ({ f, items }), (err) => ({ f, err })));
-  const [latest, feeds, quakes, nukeTests, kp, sky, money, advisories] = await Promise.all([
+  const [latest, feeds, quakes, nukeTests, kp, sky, money, advisories, xFeed] = await Promise.all([
     attempt('GDELT', () => src.fetchGdeltLatest(gd.GDELT_BASE), sources, () => ''),
     Promise.all(feedJobs),
     attempt('USGS earthquakes', src.fetchQuakes, sources),
@@ -92,7 +92,16 @@ export async function collect(now = Date.now()) {
     attempt('adsb.lol military aircraft', src.fetchSky, sources, (v) => `${v.airborne} airborne`),
     attempt('FRED markets', () => src.fetchMoney(now), sources, (v) => Object.keys(v).join(', ')),
     attempt('State Dept advisories', () => src.fetchAdvisories(now), sources, (v) => `${v.total} countries`),
+    attempt('OSINT accounts on X', () => src.fetchXPosts(now), sources, (v) => `${v.posts.length} posts from ${v.answered} of ${src.X_ACCOUNTS.length} accounts`),
   ]);
+
+  // X throttles hard, so a good batch of posts is kept and reused for up to six hours.
+  const xKept = state.x && now - state.x.t < 6 * HOUR ? state.x : null;
+  const xPosts = (xFeed ? xFeed.posts : xKept ? xKept.posts : []).filter((p) => now - p.time < 24 * HOUR);
+  if (!xFeed && xKept) {
+    const s = sources.find((x) => x.name === 'OSINT accounts on X');
+    Object.assign(s, { ok: true, cached: true, note: `refused this time, showing ${xPosts.length} posts from earlier` });
+  }
 
   // ---- GDELT: bring the 24h store up to date
   const gdeltSource = sources.find((s) => s.name === 'GDELT');
@@ -279,6 +288,7 @@ export async function collect(now = Date.now()) {
     sky: sky || null,
     money: money || null,
     advisories: advisories || null,
+    x: { accounts: src.X_ACCOUNTS, posts: xPosts },
     nature: { quakes: (quakes || []).slice(0, 5), kp: kp || null },
     gdelt: gdeltOk ? { latest: gd.stampToMs(store.latest), events: day.n, hours: day.hours } : null,
     sources,
@@ -288,7 +298,7 @@ export async function collect(now = Date.now()) {
   };
 
   const next = {
-    gdelt: store, history: kept, log: log.slice(-12),
+    gdelt: store, history: kept, log: log.slice(-12), x: xFeed ? { t: now, posts: xFeed.posts } : state.x,
     last: index == null ? state.last : { t: now, x: smoothed, status: status.key, con: handsCon?.level },
   };
   return { data, state: next };
