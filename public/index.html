@@ -515,7 +515,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   }
 
   // Speed is set in screen pixels per second, so long posts and short headlines move equally fast.
-  const TICKER_SPEED = { wire: 44, osint: 26 };
+  const TICKER_SPEED = { wire: 44, osint: 44 };
   function fillTicker(el, items, pxPerSec) {
     if (!items.length) { el.innerHTML = '<span>No smoke on the wire.</span>'; return; }
     el.innerHTML = items.join('') + items.join(''); // doubled so the loop is seamless
