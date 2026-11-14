@@ -6,7 +6,7 @@ A personal OSINT tension tracker. One page, no dependencies.
 - **TheseHandsCon 5–1** — an estimated readiness posture, from Hands In Pockets to Hands Thrown
 - **Doomsday Watch** — the official Doomsday Clock next to a live Beef Clock, plus a 7-day trend
 - **Who Beefin** — heat by theater (Iran & the Gulf, Russia & Ukraine, China & Taiwan…)
-- **The Odds Board / The Wire** — the markets and headlines driving the number, with two scrolling tickers
+- **The Wire** — the headlines driving the number, plus a scrolling ticker
 - **Mother Nature's Hands** — significant earthquakes and space weather (shown, not scored)
 
 ## Run it
@@ -29,9 +29,8 @@ Merge to `main`, then set **Settings → Pages → Source** to **GitHub Actions*
 
 | Feed | Used for |
 | --- | --- |
-| Polymarket (geopolitics markets) | Market odds: 60% of the index |
-| BBC World, Al Jazeera RSS | News smoke: 40% of the index |
-| GDELT | Extra conflict headlines (rate-limited; last good pull is reused for 3 hours) |
+| BBC World, Al Jazeera RSS | News smoke: the whole index |
+| GDELT | More conflict headlines for the index (rate-limited; last good pull is reused for 3 hours) |
 | USGS, NOAA SWPC | Earthquakes and space weather |
 | Bulletin of the Atomic Scientists | Official Doomsday Clock, a constant in `collect.mjs` updated each January |
 
@@ -39,14 +38,10 @@ Merge to `main`, then set **Settings → Pages → Source** to **GitHub Actions*
 
 All scoring lives in `lib/score.mjs`.
 
-- **Markets.** Each market is sorted by keyword into *smoke* (invade, strike, blockade: risk = odds of yes),
-  *truce watch* (ceasefire continues: risk = odds of no) or *peace watch* (deal by a date: risk = odds of no,
-  at about a third of the weight). Weight = severity × log of 24h volume. The score blends the weighted average
-  (60%) with the three hottest odds (40%).
-- **News.** Headlines from the last 48h get a smoke level 1–5 by keyword; newer counts more; talk of
+- **Index.** Headlines from the last 48h get a smoke level 1–5 by keyword; newer counts more; talk of
   ceasefires and peace deals counts half.
 - **TheseHandsCon** steps up every 20 index points and tightens one more step when nuclear chatter passes 25.
 
-To tune it: status bands, posture names, theaters and keyword lists are the tables at the top of `lib/score.mjs`.
+To tune it: status bands, posture names, theaters, keyword lists and `NEWS_SCALE` (how much news it takes to move the needle) are in `lib/score.mjs`.
 
 This is for fun and situational awareness. Real DEFCON levels are classified, and nothing here is one.

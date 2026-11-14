@@ -153,7 +153,7 @@ td.q { min-width: 190px; }
       <h1>Status: <span id="status">…</span></h1>
       <svg class="gauge" id="gauge" viewBox="0 0 400 222" role="img" aria-label="We Beefin Index gauge"></svg>
       <div class="parts" id="parts"></div>
-      <p class="note">A 0–100 read on how close the world is to throwing hands, from live prediction-market odds and the news wire.</p>
+      <p class="note">A 0–100 read on how close the world is to throwing hands, read off the live news wire.</p>
     </section>
 
     <section class="panel" id="conpanel">
@@ -162,8 +162,6 @@ td.q { min-width: 190px; }
       <div class="ladder" id="ladder"></div>
     </section>
   </div>
-
-  <div class="ticker" aria-label="Market ticker"><span class="tag" style="color:var(--yellow)">ODDS</span><div class="lane"><div class="run" id="tick-mkts"></div></div></div>
 
   <div class="grid even">
     <section class="panel">
@@ -177,13 +175,7 @@ td.q { min-width: 190px; }
     </section>
   </div>
 
-  <div class="grid two">
-    <section class="panel">
-      <header><h2>The Odds Board</h2><span class="note" id="mkcount"></span></header>
-      <div class="scroll"><table><thead><tr><th>Market</th><th>Type</th><th class="num">Beef odds</th><th class="num">24h</th></tr></thead><tbody id="mkts"></tbody></table></div>
-      <button class="more" id="mkmore" hidden>Show all markets</button>
-      <p class="note">Beef odds = the chance things get worse. For ceasefire and peace-deal markets that is the chance it does <em>not</em> hold or happen.</p>
-    </section>
+  <div class="grid">
     <section class="panel">
       <header><h2>The Wire</h2>
         <div class="tabs"><button id="tab-hot" aria-pressed="true">Smoke only</button><button id="tab-all" aria-pressed="false">Everything</button></div>
@@ -201,8 +193,8 @@ td.q { min-width: 190px; }
       <header><h2>Sources &amp; Method</h2></header>
       <ul class="srcs" id="srcs"></ul>
       <div class="method">
-        <p><b>Index</b> = 60% markets + 40% news. Markets: up to 28 live geopolitical markets, weighted by severity (nuclear &gt; invasion &gt; strikes) and 24h trading volume, blended with the three hottest odds so one market popping off moves the needle. News: war-and-weapons keywords in the last 48h of headlines, newest counted most.</p>
-        <p><b>TheseHandsCon</b> steps up every 20 index points (5 below 20, 1 at 80+), and tightens one extra step if nuclear chatter passes 25.</p>
+        <p><b>Index</b> comes from the news wire. Every headline from the last 48 hours gets a smoke level 1–5 by keyword (nuclear &gt; invasion &gt; strikes &gt; military &gt; tension). Newer headlines count more, and talk of ceasefires and peace deals counts half.</p>
+        <p><b>TheseHandsCon</b> steps up every 20 index points (5 below 20, 1 at 80+), and tightens one extra step if nuclear chatter passes 25 (about three nuclear headlines).</p>
         <p><b>Beef Clock</b> is this site's own conversion of the index into minutes to midnight. The official Doomsday Clock is set once a year by the Bulletin of the Atomic Scientists.</p>
         <p>For entertainment and situational awareness. Real DEFCON levels are classified; nothing here is one.</p>
       </div>
@@ -221,8 +213,7 @@ td.q { min-width: 190px; }
   const TONE = { green: 'var(--green)', yellow: 'var(--yellow)', orange: 'var(--orange)', red: 'var(--red)' };
   const CON_TONE = { 5: 'green', 4: 'yellow', 3: 'yellow', 2: 'orange', 1: 'red' };
   const TIER_TONE = ['var(--muted)', 'var(--muted)', 'var(--yellow)', 'var(--orange)', 'var(--red)', 'var(--red)'];
-  const KIND = { escalation: 'Smoke', breakdown: 'Truce watch', thaw: 'Peace watch' };
-  let data = null, wireAll = false, mkAll = false;
+  let data = null, wireAll = false;
 
   function ago(t) {
     const m = Math.max(0, Math.round((Date.now() - t) / 60000));
@@ -315,26 +306,11 @@ td.q { min-width: 190px; }
     $('tab-all').setAttribute('aria-pressed', String(wireAll));
   }
 
-  function chg(v) {
-    const p = Math.round(v * 100);
-    if (!p) return '<span class="flat">–</span>';
-    return `<span class="${p > 0 ? 'up' : 'down'}">${p > 0 ? '▲' : '▼'} ${Math.abs(p)}</span>`;
-  }
-  function drawMarkets(d) {
-    const sorted = [...d.markets].sort((a, b) => b.risk - a.risk);
-    const list = mkAll ? sorted : sorted.slice(0, 10);
-    $('mkts').innerHTML = list.map((m) => `<tr><td class="q">${link(m.url, esc(m.title))}</td><td><span class="chip" style="color:${m.kind === 'escalation' ? 'var(--orange)' : 'var(--blue)'}">${KIND[m.kind]}</span></td><td class="num"><b>${pct(m.risk)}</b></td><td class="num">${chg(m.riskChange24h)}</td></tr>`).join('')
-      || '<tr><td colspan="4" class="empty">Market feed is down. The index is running on news alone.</td></tr>';
-    $('mkcount').textContent = d.markets.length ? `${d.markets.length} markets tracked · Polymarket` : '';
-    $('mkmore').hidden = sorted.length <= 10;
-    $('mkmore').textContent = mkAll ? 'Show top 10' : `Show all ${sorted.length} markets`;
-  }
-
   function fillTicker(el, items, perItem) {
     if (!items.length) { el.innerHTML = '<span class="item">No signal.</span>'; return; }
     const html = items.join('');
     el.innerHTML = html + html; // doubled so the loop is seamless
-    el.style.setProperty('--dur', Math.max(30, items.length * perItem) + 's');
+    el.style.setProperty('--dur', Math.max(60, items.length * perItem) + 's');
   }
 
   function render(d) {
@@ -351,7 +327,7 @@ td.q { min-width: 190px; }
     $('status').textContent = d.status.label;
     document.title = `${d.index} · ${d.status.label} · We Beefin Index`;
     drawGauge(d);
-    $('parts').innerHTML = meter('Market odds', d.components.markets, TONE[tone]) + meter('News smoke', d.components.news, TONE[tone]) + meter('Nuke chatter', d.components.nuke, 'var(--red)');
+    $('parts').innerHTML = meter('News smoke', d.components.news, TONE[tone]) + meter('Nuke chatter', d.components.nuke, 'var(--red)');
 
     const ct = CON_TONE[d.handsCon.level];
     $('conpanel').className = 'panel c-' + ct;
@@ -366,10 +342,9 @@ td.q { min-width: 190px; }
 
     $('theaters').innerHTML = d.theaters.map((t) => {
       const c = t.heat >= 75 ? 'var(--red)' : t.heat >= 45 ? 'var(--orange)' : t.heat >= 20 ? 'var(--yellow)' : 'var(--green)';
-      return `<div class="beef"><span class="nm">${esc(t.name)}</span><span class="val">${t.heat}</span><div class="track"><div class="fill" style="width:${t.heat}%;background:${c}"></div></div><span class="sub">${t.markets} market${t.markets === 1 ? '' : 's'} · ${t.headlines} headline${t.headlines === 1 ? '' : 's'}</span></div>`;
+      return `<div class="beef"><span class="nm">${esc(t.name)}</span><span class="val">${t.heat}</span><div class="track"><div class="fill" style="width:${t.heat}%;background:${c}"></div></div><span class="sub">${t.headlines} headline${t.headlines === 1 ? '' : 's'}</span></div>`;
     }).join('') || '<p class="empty">Nobody beefin. Enjoy it.</p>';
 
-    drawMarkets(d);
     drawWire(d);
 
     const q = d.nature.quakes || [], kp = d.nature.kp;
@@ -380,8 +355,7 @@ td.q { min-width: 190px; }
 
     $('srcs').innerHTML = d.sources.map((s) => `<li class="${s.ok ? 'ok' : 'bad'}" title="${esc(s.ok ? 'OK' : s.error)}">${esc(s.name)}${s.ok ? (s.cached ? ' (cached)' : '') : ' (down)'}</li>`).join('');
 
-    fillTicker($('tick-news'), d.headlines.filter((h) => h.tier > 0).slice(0, 20).map((h) => `<span class="item"><b style="color:${TIER_TONE[h.tier]}">${esc(h.source.toUpperCase())}</b> ${link(h.url, esc(h.title))}</span>`), 7);
-    fillTicker($('tick-mkts'), [...d.markets].sort((a, b) => b.vol24h - a.vol24h).slice(0, 20).map((m) => `<span class="item">${link(m.url, esc(m.title))} <b>${pct(m.risk)}</b> ${chg(m.riskChange24h)}</span>`), 6);
+    fillTicker($('tick-news'), d.headlines.filter((h) => h.tier > 0).slice(0, 20).map((h) => `<span class="item"><b style="color:${TIER_TONE[h.tier]}">${esc(h.source.toUpperCase())}</b> ${link(h.url, esc(h.title))}</span>`), 16);
     freshness();
   }
 
@@ -406,7 +380,6 @@ td.q { min-width: 190px; }
 
   $('tab-hot').onclick = () => { wireAll = false; drawWire(data); };
   $('tab-all').onclick = () => { wireAll = true; drawWire(data); };
-  $('mkmore').onclick = () => { mkAll = !mkAll; drawMarkets(data); };
   setInterval(() => { $('utc').textContent = new Date().toISOString().slice(11, 19) + ' UTC'; freshness(); }, 1000);
   load();
   if (!window.__SNAPSHOT__) setInterval(load, 60000);

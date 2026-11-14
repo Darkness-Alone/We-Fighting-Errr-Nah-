@@ -43,8 +43,7 @@ async function loadPrevious() {
 export async function collect(now = Date.now()) {
   const sources = [];
   const prev = await loadPrevious();
-  const [events, quakes, kp, gdelt, ...rss] = await Promise.all([
-    attempt('Polymarket', src.fetchPolymarketEvents, sources),
+  const [quakes, kp, gdelt, ...rss] = await Promise.all([
     attempt('USGS Earthquakes', src.fetchQuakes, sources),
     attempt('NOAA Space Weather', src.fetchKp, sources),
     attempt('GDELT', src.fetchGdelt, sources),
@@ -60,32 +59,6 @@ export async function collect(now = Date.now()) {
     delete s.error;
   } else if (!gdelt) gdeltCache = undefined;
   const gdeltItems = gdeltCache?.items || [];
-
-  // Markets
-  const candidates = [];
-  for (const ev of events || []) {
-    const picked = src.pickMarket(ev, now);
-    if (!picked) continue;
-    const text = `${ev.title} ${picked.question}`;
-    const cls = sc.classifyMarket(text);
-    if (!cls) continue;
-    candidates.push({
-      title: picked.question || ev.title,
-      url: `https://polymarket.com/event/${ev.slug}`,
-      ...cls,
-      pYes: picked.pYes,
-      change24h: picked.change24h,
-      vol24h: Number(ev.volume24hr) || 0,
-      endDate: picked.endDate,
-      theater: sc.theaterOf(text),
-    });
-  }
-  const mk = sc.scoreMarkets(candidates);
-  const markets = mk.markets.map((m) => ({
-    ...m,
-    // Signed so that positive always means "more beef".
-    riskChange24h: m.kind === 'escalation' ? m.change24h : -m.change24h,
-  }));
 
   // Headlines
   const seen = new Set();
@@ -104,13 +77,11 @@ export async function collect(now = Date.now()) {
   // Theaters: who is beefin' with who
   const theaters = [...sc.THEATERS, { id: 'other', name: 'Everywhere Else' }]
     .map((th) => {
-      const ms = markets.filter((m) => m.theater === th.id);
       const hs = hotHeadlines.filter((h) => h.theater === th.id);
-      const mHeat = ms.reduce((s, m) => s + m.weight * m.risk, 0);
       const hHeat = hs.reduce((s, h) => s + h.heat, 0);
-      return { id: th.id, name: th.name, markets: ms.length, headlines: hs.length, raw: mHeat + hHeat * 1.5 };
+      return { id: th.id, name: th.name, headlines: hs.length, raw: hHeat };
     })
-    .filter((t) => t.markets + t.headlines > 0)
+    .filter((t) => t.headlines > 0)
     .sort((a, b) => b.raw - a.raw);
   const maxRaw = theaters[0]?.raw || 1;
   for (const t of theaters) {
@@ -118,12 +89,10 @@ export async function collect(now = Date.now()) {
     delete t.raw;
   }
 
-  // Nuclear chatter: highest live odds on a nuclear market, plus nuclear headlines
-  const nukeOdds = Math.max(0, ...markets.filter((m) => m.severity === 5).map((m) => m.risk));
-  const nukeHeadlines = hotHeadlines.filter((h) => h.tier === 5).length;
-  const nukeHeat = Math.min(1, nukeOdds + nukeHeadlines * 0.05);
+  // Nuclear chatter: each nuclear headline in the window adds 8 points
+  const nukeHeat = Math.min(1, hotHeadlines.filter((h) => h.tier === 5).length * 0.08);
 
-  const index = sc.combine(mk.score, nw.score);
+  const index = nw.score == null ? null : Math.round(nw.score);
   const status = index == null ? null : sc.statusFor(index);
   const handsCon = index == null ? null : sc.handsConFor(index, nukeHeat);
 
@@ -136,7 +105,6 @@ export async function collect(now = Date.now()) {
     status,
     handsCon,
     components: {
-      markets: mk.score == null ? null : Math.round(mk.score),
       news: nw.score == null ? null : Math.round(nw.score),
       nuke: Math.round(nukeHeat * 100),
     },
@@ -145,7 +113,6 @@ export async function collect(now = Date.now()) {
       beefSeconds: index == null ? null : sc.beefClockSeconds(index),
     },
     theaters,
-    markets,
     headlines: headlines.slice(0, 60),
     nature: { quakes: (quakes || []).slice(0, 5), kp },
     sources,
@@ -165,7 +132,7 @@ export async function collectAndWrite() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const d = await collectAndWrite();
   console.log(`We Beefin Index: ${d.index} (${d.status?.label}) | TheseHandsCon ${d.handsCon?.level}`);
-  console.log(`  markets ${d.components.markets} (${d.markets.length} tracked) | news ${d.components.news} | nuke ${d.components.nuke}`);
+  console.log(`  news ${d.components.news} (${d.headlines.filter((h) => h.tier).length} hot headlines) | nuke ${d.components.nuke}`);
   for (const s of d.sources) console.log(`  ${s.ok ? 'ok  ' : 'FAIL'} ${s.name}${s.ok ? ` (${s.count})` : `: ${s.error}`}`);
   if (d.index == null) process.exitCode = 1;
 }

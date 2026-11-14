@@ -1,36 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as sc from '../lib/score.mjs';
-import { parseRss, pickMarket } from '../lib/sources.mjs';
-
-test('market classification picks direction and severity', () => {
-  assert.deepEqual(sc.classifyMarket('Will China invade Taiwan by end of 2026?'), { kind: 'escalation', severity: 4 });
-  assert.deepEqual(sc.classifyMarket('Iran Nuke before 2027?'), { kind: 'escalation', severity: 5 });
-  assert.equal(sc.classifyMarket('Israel x Iran ceasefire continues through November 15?').kind, 'breakdown');
-  assert.equal(sc.classifyMarket('Russia x Ukraine Ceasefire by December 31?').kind, 'thaw');
-  assert.equal(sc.classifyMarket('US-Iran Final Nuclear Deal by December 31?').kind, 'thaw');
-  assert.equal(sc.classifyMarket('US announces end of Iranian blockade by November 30?').kind, 'thaw');
-});
-
-test('non-conflict markets are left out', () => {
-  for (const t of [
-    'Prime Minister of Israel after the next election?',
-    'Where will Trump and Putin meet next in 2026?',
-    'Putin out as President of Russia by June 30?',
-    'Will Reza Pahlavi enter Iran by December 31?',
-    'FAA outage attributed to Iran?',
-  ]) assert.equal(sc.classifyMarket(t), null, t);
-});
-
-test('market score rises with escalation odds and reads inverse markets backwards', () => {
-  const mk = (pYes, kind = 'escalation') => ({ kind, severity: 3, pYes, vol24h: 10000 });
-  const calm = sc.scoreMarkets([mk(0.02), mk(0.05), mk(0.03)]).score;
-  const hot = sc.scoreMarkets([mk(0.6), mk(0.8), mk(0.4)]).score;
-  assert.ok(calm < 10 && hot > 50, `${calm} / ${hot}`);
-  assert.ok(sc.scoreMarkets([mk(0.95, 'breakdown')]).score < 10);
-  assert.ok(sc.scoreMarkets([mk(0.1, 'breakdown')]).score > 80);
-  assert.equal(sc.scoreMarkets([]).score, null);
-});
+import { parseRss } from '../lib/sources.mjs';
 
 test('headline tiers', () => {
   assert.equal(sc.scoreHeadline('North Korea conducts nuclear test').tier, 5);
@@ -61,11 +32,12 @@ test('status bands and posture ladder', () => {
   assert.equal(sc.handsConFor(95, 1).level, 1);
 });
 
-test('combine falls back to whichever signal is alive', () => {
-  assert.equal(sc.combine(50, 0), 30);
-  assert.equal(sc.combine(null, 44), 44);
-  assert.equal(sc.combine(41, null), 41);
-  assert.equal(sc.combine(null, null), null);
+test('news score climbs with heat and is empty without headlines', () => {
+  const now = Date.now();
+  const h = (n) => Array.from({ length: n }, (_, i) => ({ title: `Airstrike hits city ${i}`, time: now - 3600000 }));
+  const few = sc.scoreNews(h(2), now).score, many = sc.scoreNews(h(20), now).score;
+  assert.ok(few < 30 && many > 80, `${few} / ${many}`);
+  assert.equal(sc.scoreNews([], now).score, null);
 });
 
 test('beef clock runs from 12 minutes to midnight', () => {
@@ -83,17 +55,4 @@ test('rss parsing handles CDATA, entities and junk links', () => {
   assert.equal(items.length, 1);
   assert.equal(items[0].title, `Tom & Jerry's "truce"`);
   assert.equal(items[0].url, 'https://example.com/a?x=1&y=2');
-});
-
-test('pickMarket skips closed and expired markets', () => {
-  const now = Date.parse('2026-11-14T00:00:00Z');
-  const ev = { markets: [
-    { question: 'old', closed: true, outcomePrices: '["1","0"]', volume24hr: 999, endDate: '2026-12-01T00:00:00Z' },
-    { question: 'past', closed: false, outcomePrices: '["0.9","0.1"]', volume24hr: 500, endDate: '2026-11-01T00:00:00Z' },
-    { question: 'live', closed: false, outcomePrices: '["0.2","0.8"]', volume24hr: 10, endDate: '2026-12-01T00:00:00Z', oneDayPriceChange: 0.03 },
-  ] };
-  const m = pickMarket(ev, now);
-  assert.equal(m.question, 'live');
-  assert.equal(m.pYes, 0.2);
-  assert.equal(pickMarket({ markets: [] }, now), null);
 });
