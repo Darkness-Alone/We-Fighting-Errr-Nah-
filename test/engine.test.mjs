@@ -258,10 +258,10 @@ test('status bands and TheseHandsCon levels', () => {
   assert.equal(sc.statusFor(24, 'lookin').key, 'lookin'); // one point under the line: label holds
   assert.equal(sc.statusFor(22, 'lookin').key, 'cool'); // clearly under: relaxes
   assert.equal(sc.statusFor(56, 'lookin').key, 'squared'); // heating up is immediate
-  assert.deepEqual([10, 30, 50, 70, 90].map((s) => sc.handsConFor(s).level), [5, 4, 3, 2, 1]);
-  assert.equal(sc.handsConFor(40, 3).level, 3); // just under the line: stays put
-  assert.equal(sc.handsConFor(38, 3).level, 4); // clearly under: relaxes
-  assert.equal(sc.handsConFor(50, 4).level, 3); // tightening is immediate
+  assert.deepEqual([10, 45, 60, 75, 90].map((s) => sc.handsConFor(s).level), [5, 4, 3, 2, 1]);
+  assert.equal(sc.handsConFor(53, 3).level, 3); // just under the line: stays put
+  assert.equal(sc.handsConFor(50, 3).level, 4); // clearly under: relaxes
+  assert.equal(sc.handsConFor(56, 4).level, 3); // tightening is immediate
   assert.equal(sc.handsConFor(10, null, 2).level, 2); // a hard trigger sets a floor
 });
 
@@ -291,4 +291,21 @@ test('fight card leaves allies off and ranks by heat', () => {
   assert.deepEqual(card.map((m) => m.key), ['RUS-UKR', 'CHN-USA']);
   assert.equal(card[0].rung, 4);
   assert.equal(card[1].stakes, 'nuclear');
+});
+
+test('TheseHandsCon follows US involvement, not world tension', () => {
+  const w = (dyads) => windowOf({ dyads });
+  // A big war the US is not in barely registers.
+  const notUs = sc.usPosture(w({ 'ISR-PSE': [100, 10, 30, 1800] }), 0).score;
+  // US forces fighting Iran hard: raised, but capped below level 2.
+  const usIran = sc.usPosture(w({ 'IRN-USA': [200, 50, 30, 1500] }), 0).score;
+  // US and Russia trading blows: the top of the scale is reachable.
+  const usRussia = sc.usPosture(w({ 'RUS-USA': [200, 60, 80, 600] }), 60).score;
+  // A NATO ally under Russian pressure counts, at half weight.
+  const ally = sc.usPosture(w({ 'POL-RUS': [80, 20, 40, 300] }), 0);
+  assert.ok(notUs < 40, `not US ${notUs}`);
+  assert.ok(usIran >= 55 && usIran < 70, `US-Iran ${usIran}`);
+  assert.ok(usRussia >= 70, `US-Russia ${usRussia}`);
+  assert.ok(ally.score > notUs && ally.standoffs[0].ally === 'POL');
+  assert.equal(sc.usPosture(windowOf({ n: 0 }), 0), null);
 });

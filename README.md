@@ -14,7 +14,7 @@ No dependencies, no API keys, no accounts. Just Node.
 | Panel | What it shows |
 | --- | --- |
 | **We Beefin Index** | A 0–100 gauge, its status, the trend, a ghost needle for 24 hours ago, and what went into the number |
-| **TheseHandsCon** | An estimated readiness level, 5 (calm) to 1 (it's on), with the reasons for it |
+| **TheseHandsCon** | An estimate of US military readiness on a DEFCON-style scale, 5 (normal) to 1 (nuclear war), with the reasons for it |
 | **The Rundown** | The whole picture in four or five sentences, with a copy button |
 | **Where It's Poppin** | A world map of places named in reports of force, plus heat by region |
 | **The Fight Card** | Country-vs-country matchups: how much is talk, how much is flexin', how much is hands |
@@ -44,18 +44,32 @@ clear of the line, so the label does not flicker at a boundary.
 
 ### TheseHandsCon
 
-| Level | Name | Posture score |
-| --- | --- | --- |
-| 5 | Hands In Pockets | 0–23 |
-| 4 | Hands On Hips | 24–41 |
-| 3 | Hands Up | 42–61 |
-| 2 | Knuckles Cracked | 62–79 |
-| 1 | Hands Thrown | 80–100 |
+TheseHandsCon estimates where **US** military readiness would sit on the DEFCON scale. Like DEFCON,
+it is about the United States, not the world: a war the US is not part of barely moves it.
 
-The posture score is 60% The Big Dogs and 40% the index, so a regional war moves it less than
-nuclear powers squaring up. Relaxing a level needs the score 3 points clear of the line. Two hard
-triggers override the score: a nuclear test picked up by seismometers forces level 2 or tighter, and
-two nuclear-armed rivals trading blows forces level 3 or tighter.
+| Level | Name | Meaning | US posture score |
+| --- | --- | --- | --- |
+| 5 | Hands In Pockets | Normal peacetime readiness | 0–39 |
+| 4 | Hands On Hips | Heightened watch: US forces trading fire somewhere, or real friction with a nuclear rival | 40–54 |
+| 3 | Hands Up | Raised readiness: the US in sustained combat, or squared off with Russia, China or North Korea | 55–69 |
+| 2 | Knuckles Cracked | Next step to war: the US and a nuclear power on the brink | 70–84 |
+| 1 | Hands Thrown | Nuclear war imminent or under way | 85–100 |
+
+For reference, real DEFCON has been 3 twice in public record (the 1973 Yom Kippur War and 9/11), 2
+once (the 1962 Cuban Missile Crisis, for Strategic Air Command), and 1 never.
+
+The US posture score is built from three signals:
+
+- **Rival standoffs**: the US, or a US treaty ally, squaring off with Russia, China or North Korea.
+  This is the only signal that can reach levels 2 and 1.
+- **US in combat**: US forces using or taking force against anyone else, with Iran counted double.
+  On its own this tops out inside level 3.
+- **Nuclear talk** in the press, which adds at most 15 points.
+
+The strongest of the first two leads. Relaxing a level needs the score 3 points clear of the line.
+Three hard triggers set a minimum: US forces trading fire with any state means level 4 or tighter;
+the US trading blows with Russia, China or North Korea, or a nuclear test detected anywhere, means
+level 3 or tighter.
 
 ## How the number is made
 
@@ -98,13 +112,14 @@ Every curve and band was set by running the live pipeline over GDELT's archive o
 | 5 Jun 2019 | A quiet day | 23 | 5 |
 | 15 Jun 2021 | A quiet day | 16 | 5 |
 | 9 Aug 2017 | "Fire and fury": US and North Korea trade nuclear threats | 52 | 2 |
-| 27 Feb 2019 | India and Pakistan dogfight over Kashmir | 43 | 3 |
-| 8 Jan 2020 | Iran fires missiles at US bases in Iraq | 73 | 2 |
-| 24 Feb 2022 | Russia invades Ukraine | 80 | 2 |
-| 8 Oct 2023 | Hamas attack, Gaza war begins | 71 | 3 |
-| 14 Apr 2024 | Iran launches missiles and drones at Israel | 84 | 2 |
-| 20 Nov 2024 | Long-range strikes into Russia, Moscow lowers its nuclear threshold | 61 | 2 |
-| 7 May 2025 | India and Pakistan exchange strikes | 50 | 3 |
+| 27 Feb 2019 | India and Pakistan dogfight; US–Russia row over the INF nuclear treaty | 43 | 3 |
+| 8 Jan 2020 | Iran fires missiles at US bases in Iraq | 74 | 3 |
+| 24 Feb 2022 | Russia invades Ukraine | 80 | 3 |
+| 15 Mar 2023 | A Russian jet downs a US drone over the Black Sea | 36 | 3 |
+| 8 Oct 2023 | Hamas attack, Gaza war begins (US not in the fight) | 71 | 5 |
+| 14 Apr 2024 | Iran fires missiles and drones at Israel; US forces help shoot them down | 84 | 4 |
+| 20 Nov 2024 | US-supplied missiles hit Russia, Moscow lowers its nuclear threshold | 61 | 2 |
+| 7 May 2025 | India and Pakistan exchange strikes (US not in the fight) | 50 | 5 |
 
 This back-test uses the GDELT ingredients only. Front pages and markets are not archived the same
 way, so their curves were set by reasoning, not history. One known soft spot: GDELT under-covers
