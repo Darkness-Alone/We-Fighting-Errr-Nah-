@@ -41,7 +41,8 @@ for (const [day, store] of days) {
   const nuclear = sc.escalation(w, 0.8);
   const dogs = sc.bigDogsScore(esc.score, nuke.score);
   const { raw } = sc.blend({ action: action.score, chatter: press.score, bigdogs: dogs, money: null });
-  const con = sc.handsConFor(sc.postureScore(raw, dogs));
+  const us = sc.usPosture(w, nuke.score);
+  const con = sc.handsConFor(us.score);
   const clock = sc.beefClockSeconds(85, sc.doomScore(nuclear.score, nuke.score));
   const top = action.matchups.slice(0, 3).map((m) => `${m.key} ${m.handsPerHour.toFixed(1)}`).join(', ');
   console.log(

@@ -14,7 +14,7 @@ import * as src from './lib/sources.mjs';
 import * as sc from './lib/score.mjs';
 import * as gd from './lib/gdelt.mjs';
 import { classify, clusterStories, prettySlug, BEEF_TYPES, CALM_NAME } from './lib/classify.mjs';
-import { theaterOfText, countryName } from './lib/geo.mjs';
+import { theaterOfText, countryName, usFoeWeight, US_PEERS } from './lib/geo.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const DATA_FILE = path.join(ROOT, 'public', 'data.json');
@@ -192,20 +192,27 @@ export async function collect(now = Date.now()) {
 
   // ---- TheseHandsCon
   const freshTest = (nukeTests || []).filter((t) => now - t.time < 7 * 24 * HOUR);
-  const rivals = sc.matchups(recent).filter((m) => m.weight >= 1 && m.handsPerHour >= 5);
-  const floor = freshTest.length ? 2 : rivals.length ? 3 : 5;
-  const posture = sc.postureScore(smoothed, bigdogs);
+  // TheseHandsCon is about US readiness: 60% the last six hours, 40% the full day, like the index.
+  const usR = sc.usPosture(recent, nkR.score), usD = sc.usPosture(day, nkD.score);
+  const posture = usD ? sc.fastSlow(usR?.score, usD.score) : null;
+  // Hard floors. A nuclear test anywhere, or the US trading blows with Russia, China or North Korea,
+  // means at least level 3. US forces in an exchange of fire with any state means at least level 4.
+  const usSwing = sc.matchups(day).filter((m) => (m.a === 'USA' || m.b === 'USA') && usFoeWeight(m.a === 'USA' ? m.b : m.a) > 0 && m.rung >= 3);
+  const peerFight = sc.matchups(recent).filter((m) => (m.a === 'USA' || m.b === 'USA') && US_PEERS.has(m.a === 'USA' ? m.b : m.a) && m.handsPerHour >= 3);
+  const floor = freshTest.length || peerFight.length ? 3 : usSwing.length ? 4 : 5;
   const handsCon = posture == null ? null : sc.handsConFor(posture, state.last?.con, floor);
   const why = [];
   if (handsCon) {
-    for (const t of freshTest) why.push(`Seismic network logged a nuclear explosion: ${t.title}`);
-    for (const m of rivals) why.push(`${countryName(m.a)} and ${countryName(m.b)}, both nuclear-armed, are trading blows right now`);
-    const top = escD.top[0];
-    if (top) why.push(`${countryName(top.a)} vs ${countryName(top.b)} is the most dangerous matchup: ${sc.RUNGS[top.rung - 1].name}, ${top.hands} reports of force in 24h`);
-    if (nuke != null) why.push(`Nuclear talk in the press: ${round(nuke)} out of 100 (${nkD.articles} headlines in 24h)`);
+    for (const t of freshTest) why.push(`Seismic network logged a nuclear explosion: ${t.title}. That alone means level 3 or tighter`);
+    for (const m of peerFight) why.push(`The US and ${countryName(m.a === 'USA' ? m.b : m.a)} are trading blows right now. That alone means level 3 or tighter`);
+    for (const m of usSwing.slice(0, 2)) why.push(`US forces are trading fire with ${countryName(m.a === 'USA' ? m.b : m.a)}: ${m.hands} reports of force in 24h. That alone means level 4 or tighter`);
+    const st = usD?.standoffs[0];
+    if (st) why.push(st.ally
+      ? `Closest call with a nuclear rival: ${countryName(st.ally)}, a US ally, vs ${countryName(st.foe)}`
+      : `Closest call with a nuclear rival: the US vs ${countryName(st.foe)}, ${round(st.heat)} out of 100`);
+    if (usD) why.push(`US posture score ${round(posture)}: rival standoffs ${round(usD.parts.peer)}, US in combat ${round(usD.parts.regional)}, nuclear talk ${round(usD.parts.nuke)}`);
     if (skyNote === 'surge' || skyNote === 'busy') why.push(`Strategic aircraft up: ${sky.strategic} tracked, usually about ${sky.usual}`);
     if (advisoryBonus) why.push(`${advisories.newLevel4} new "Do Not Travel" warning${advisories.newLevel4 === 1 ? '' : 's'} from Washington this week`);
-    why.push(`World tension overall: We Beefin Index ${index}`);
   }
 
   // ---- Doomsday

@@ -214,7 +214,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
 
     <div class="col">
     <section class="panel" id="conpanel">
-      <header><h2>TheseHandsCon</h2><span class="note">Estimate from open sources · not an official alert level</span></header>
+      <header><h2>TheseHandsCon</h2><span class="note">US readiness estimate, DEFCON-style · not an official alert level</span></header>
       <div class="con-big" id="conbig">…</div>
       <div class="ladder" id="ladder"></div>
       <h3>Why this level</h3>
@@ -299,7 +299,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     <details id="downwrap" hidden><summary id="downsum"></summary><ul class="srcs" id="down" style="margin-top:8px"></ul></details>
     <div class="method">
       <p><b>We Beefin Index</b> blends four ingredients. <b>The Action</b> (35%) is how much of the world's news GDELT codes as one state using force on another, plus how hard the hottest matchup is going. <b>The Chatter</b> (35%) is the share of headlines about fighting, weighted by how bad, across the wider press and the front pages of major outlets. <b>The Big Dogs</b> (20%) is friction between nuclear powers plus nuclear-weapons talk. <b>The Money</b> (10%) is Wall Street's fear gauge and the oil price. A missing ingredient hands its share to the others.</p>
-      <p><b>TheseHandsCon</b> leans 60% on The Big Dogs and 40% on the index, so a regional war moves it less than nuclear powers squaring up. Relaxing a level needs the score 3 points clear of the line. A seismically detected nuclear test forces level 2 or tighter.</p>
+      <p><b>TheseHandsCon</b> estimates where US military readiness would sit on the DEFCON scale, so a war the US is not part of barely moves it. It is built from three signals: the US or a US ally squaring off with Russia, China or North Korea (the only route to levels 2 and 1); US forces in combat with anyone else (which tops out inside level 3); and nuclear talk in the press. US forces trading fire with any state means level 4 or tighter. The US trading blows with a nuclear rival, or a nuclear test anywhere, means level 3 or tighter.</p>
       <p><b>OSINT</b> scroller posts come from public Telegram channels, some partisan or state-linked. They are shown as they come and never counted in any score: they are fast and often unverified.</p>
       <p><b>Beef Clock</b> starts from the official Doomsday Clock and moves with the nuclear reading: every 30 points hotter halves the time left. The official clock is set once a year by the Bulletin of the Atomic Scientists.</p>
       <p>The index rises fast and falls slowly on purpose, and a status only relaxes once the index is 2 points clear of the line, so it does not flicker at a boundary. Every curve and band was set against GDELT's archive of real days:</p>
@@ -308,12 +308,16 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
       <thead><tr><th>Day</th><th>What happened</th><th class="num">Index</th><th class="num">HandsCon</th></tr></thead>
       <tbody>
         <tr><td>5 Jun 2019</td><td>A quiet day</td><td class="num">23</td><td class="num">5</td></tr>
+        <tr><td>15 Jun 2021</td><td>A quiet day</td><td class="num">16</td><td class="num">5</td></tr>
         <tr><td>9 Aug 2017</td><td>"Fire and fury": US and North Korea trade nuclear threats</td><td class="num">52</td><td class="num">2</td></tr>
-        <tr><td>8 Jan 2020</td><td>Iran fires missiles at US bases in Iraq</td><td class="num">73</td><td class="num">2</td></tr>
-        <tr><td>24 Feb 2022</td><td>Russia invades Ukraine</td><td class="num">80</td><td class="num">2</td></tr>
-        <tr><td>8 Oct 2023</td><td>Hamas attack, Gaza war begins</td><td class="num">71</td><td class="num">3</td></tr>
-        <tr><td>14 Apr 2024</td><td>Iran launches missiles and drones at Israel</td><td class="num">84</td><td class="num">2</td></tr>
-        <tr><td>7 May 2025</td><td>India and Pakistan exchange strikes</td><td class="num">50</td><td class="num">3</td></tr>
+        <tr><td>27 Feb 2019</td><td>India and Pakistan dogfight; US–Russia row over the INF nuclear treaty</td><td class="num">43</td><td class="num">3</td></tr>
+        <tr><td>8 Jan 2020</td><td>Iran fires missiles at US bases in Iraq</td><td class="num">74</td><td class="num">3</td></tr>
+        <tr><td>24 Feb 2022</td><td>Russia invades Ukraine</td><td class="num">80</td><td class="num">3</td></tr>
+        <tr><td>15 Mar 2023</td><td>A Russian jet downs a US drone over the Black Sea</td><td class="num">36</td><td class="num">3</td></tr>
+        <tr><td>8 Oct 2023</td><td>Hamas attack, Gaza war begins (US not in the fight)</td><td class="num">71</td><td class="num">5</td></tr>
+        <tr><td>14 Apr 2024</td><td>Iran fires missiles and drones at Israel; US forces help shoot them down</td><td class="num">84</td><td class="num">4</td></tr>
+        <tr><td>20 Nov 2024</td><td>US-supplied missiles hit Russia, Moscow lowers its nuclear threshold</td><td class="num">61</td><td class="num">2</td></tr>
+        <tr><td>7 May 2025</td><td>India and Pakistan exchange strikes (US not in the fight)</td><td class="num">50</td><td class="num">5</td></tr>
       </tbody>
     </table></div>
     <p class="note">Back-tested on GDELT data only, since front pages and markets are not archived the same way. For entertainment and situational awareness. Real DEFCON levels are classified; nothing here is one.</p>
@@ -570,7 +574,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     $('ladder').innerHTML = [...d.scales.handsCon].reverse().map((r) => `<div class="rung${r.level === d.handsCon.level ? ' on' : ''}"><span class="n">${r.level}</span><div><div class="nm">${esc(r.name)}</div><div class="bl">${esc(r.blurb)}</div></div></div>`).join('');
     $('why').innerHTML = d.handsCon.why.map((w) => `<li>${esc(w)}</li>`).join('');
     const tighter = d.scales.handsCon.find((h) => h.level === d.handsCon.level - 1);
-    $('connote').textContent = `Posture score ${d.handsCon.score} out of 100.` + (tighter ? ` Level ${tighter.level} starts at ${tighter.min}.` : '');
+    $('connote').textContent = `US posture score ${d.handsCon.score} out of 100.` + (tighter ? ` Level ${tighter.level} starts at ${tighter.min}.` : '');
 
     // rundown
     $('rundown').innerHTML = d.rundown.map((s) => `<p>${esc(s)}</p>`).join('');
