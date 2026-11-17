@@ -168,6 +168,42 @@ p { margin: 0; }
 .tags span { border: 1px solid var(--line); padding: 1px 7px; font-size: 12px; }
 .up { color: var(--red); } .down { color: var(--green); }
 
+/* search */
+.search { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
+.search input { flex: 1 1 260px; min-width: 0; font: inherit; font-size: 14px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); padding: 9px 12px; }
+.search input:focus { outline: 2px solid var(--blue); outline-offset: 0; }
+.picks { display: flex; flex-wrap: wrap; gap: 6px; }
+.picks button { font-size: 11.5px; background: none; color: var(--muted); border: 1px solid var(--line); padding: 3px 9px; cursor: pointer; }
+.picks button:hover { color: var(--fg); border-color: var(--muted); }
+.hits { display: grid; gap: var(--s3); }
+.hits h3 { margin-bottom: 4px; }
+.hits ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.hits li { font-size: 13px; }
+.results { list-style: none; margin: 0; padding: 0; display: grid; }
+.results li { display: grid; gap: 3px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.results .meta { color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+.kind { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding: 1px 6px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.tabs.tabs-wrap { flex-wrap: wrap; }
+.search .btn { padding: 9px 14px; }
+mark { background: color-mix(in srgb, var(--yellow) 35%, transparent); color: inherit; padding: 0 1px; }
+
+/* what moved it */
+.move { width: 100%; max-width: 560px; text-align: left; border: 1px solid var(--line); background: var(--panel-2); padding: 10px 12px; display: grid; gap: 6px; font-size: 12.5px; }
+.move .bars { display: grid; gap: 4px; }
+.move .bar { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 3.2em; gap: var(--s2); align-items: center; }
+.move .lane2 { position: relative; height: 8px; background: var(--panel); border: 1px solid var(--line); }
+.move .lane2 span { position: absolute; top: 0; bottom: 0; }
+.move .lane2::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; border-left: 1px solid var(--muted); }
+
+/* explainers */
+details.explain { border-top: 1px solid var(--line); padding-top: var(--s2); }
+details.explain summary { color: var(--blue); font-size: 12.5px; }
+dl.terms { margin: var(--s2) 0 0; display: grid; grid-template-columns: minmax(7.5em, max-content) minmax(0, 1fr); gap: 6px 12px; font-size: 12.5px; }
+dl.terms dt { font-weight: 700; }
+dl.terms dd { margin: 0; color: var(--muted); }
+dl.terms dd b { color: var(--fg); font-weight: 500; }
+@media (max-width: 480px) { dl.terms { grid-template-columns: minmax(0, 1fr); } dl.terms dd { margin-bottom: 4px; } }
+
 /* receipts */
 .srcs { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; margin: 0; padding: 0; list-style: none; }
 .srcs li::before { content: "● "; color: var(--green); }
@@ -199,12 +235,23 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   <div class="ticker" aria-label="Posts from OSINT channels on Telegram"><span class="tag" style="color:var(--blue)">OSINT</span><div class="lane"><div class="run" id="xtick"></div></div></div>
   <div class="alert" id="alert" hidden></div>
 
+  <section class="panel" aria-label="Search the news">
+    <header><h2>Search the Intel</h2><span class="note">Every report and OSINT post from the last 48 hours, plus a live worldwide news search</span></header>
+    <form class="search" id="qform" role="search">
+      <input id="q" type="search" placeholder="Type a word or words: Venezuela, drone strike, Hormuz…" autocomplete="off" aria-label="Keyword search">
+      <button class="btn" type="submit">Search</button>
+    </form>
+    <div class="picks" id="picks"></div>
+    <div class="hits" id="hits" hidden></div>
+  </section>
+
   <div class="grid two">
     <section class="panel hero" id="hero">
       <p class="eyebrow">We Beefin Index</p>
       <h1>Status: <span id="status">…</span></h1>
       <svg class="gauge" id="gauge" viewBox="0 0 400 222" role="img" aria-label="We Beefin Index gauge"></svg>
       <div class="trend" id="trend"></div>
+      <div class="move" id="move" hidden></div>
       <p class="note" id="blurb"></p>
       <div class="parts">
         <h3>What's in the number</h3>
@@ -239,8 +286,29 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     </section>
     <section class="panel">
       <header><h2>The Fight Card</h2><span class="note">Country vs country, last 24h</span></header>
-      <span class="key"><span><i class="k-talk"></i>talk</span><span><i class="k-flex"></i>flexin' (threats, sanctions, troop moves)</span><span><i class="k-hands"></i>hands (strikes, clashes)</span></span>
+      <span class="key"><span><i class="k-talk"></i>talk</span><span><i class="k-flex"></i>flexin' (threats, sanctions, troop moves)</span><span><i class="k-hands"></i>hands (strikes, clashes, attacks)</span></span>
       <div class="stack" id="card"></div>
+      <details class="explain" id="cardhelp">
+        <summary>What the fight card means</summary>
+        <dl class="terms">
+          <dt>The numbers</dt><dd>Each number is a count of <b>news articles</b> in the last 24 hours that report one country doing that thing to the other, as coded by the GDELT project from news worldwide. It is not a count of attacks: one big strike can be reported by hundreds of articles. Use it to compare matchups, not as a casualty count.</dd>
+          <dt>Bar: Talk (blue)</dt><dd>Words only: statements, accusations, demands, appeals, criticism, meetings and negotiations.</dd>
+          <dt>Bar: Flexin' (yellow)</dt><dd>Pressure short of shooting: threats and ultimatums, sanctions and embargoes, cutting ties or expelling diplomats, troop and naval movements, blockades, military drills, alerts.</dd>
+          <dt>Bar: Hands (red)</dt><dd>Physical force: strikes and bombardments, attacks on bases or ships, assassinations, seizures, and clashes.</dd>
+          <dt>Clashes</dt><dd>Armed forces of the two sides actually firing on each other: firefights, skirmishes, border shootouts, an aircraft or drone being shot down. A one-sided strike counts as "hands" too, but a clash means both sides are engaging.</dd>
+          <dt>An hour</dt><dd>Hands articles per hour over the last 24 hours. Above about 6 an hour is war-level coverage.</dd>
+          <dt>Heating up / quieter right now</dt><dd>The last 6 hours are running well above, or well below, the 24-hour pace.</dd>
+          <dt>Main event, co-main, undercard</dt><dd>Billing order: the hottest matchup is the main event.</dd>
+          <dt>Badge: Talkin' Spicy</dt><dd>Mostly words. Tension, but nothing physical.</dd>
+          <dt>Badge: Flexin'</dt><dd>At least a third of the coverage is threats or pressure moves, or the pressure is heavy.</dd>
+          <dt>Badge: Swingin'</dt><dd>Force is being used: at least a quarter of the coverage is hands, at half an article an hour or more.</dd>
+          <dt>Badge: Full Send</dt><dd>Sustained, war-level fighting: 6 or more hands articles an hour.</dd>
+          <dt>Badge: Nuclear stakes</dt><dd>A fight here could go nuclear because <b>both sides have nuclear weapons</b> (US vs Russia, India vs Pakistan), or because a nuclear power is squaring off with a country the US is <b>treaty-bound to defend</b> (Russia vs a NATO member, China vs Taiwan or Japan, North Korea vs South Korea). It does not mean nuclear weapons are in use.</dd>
+          <dt>Badge: Big dog involved</dt><dd>One side has nuclear weapons (US, Russia, China, UK, France, India, Pakistan, Israel, North Korea), or Iran faces a nuclear power. Serious, but a step below nuclear stakes.</dd>
+          <dt>Badge: Regional</dt><dd>Neither side has nuclear weapons. Deadly, but less able to spread into a world war.</dd>
+          <dt>Not shown</dt><dd>Allies bickering (US vs UK, say) and matchups with fewer than 6 articles.</dd>
+        </dl>
+      </details>
     </section>
   </div>
 
@@ -269,6 +337,11 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     <div id="presswrap" hidden>
       <h3 style="margin-bottom:8px">Also running widely</h3>
       <ul class="wire" id="press"></ul>
+    </div>
+    <div id="redditwrap" hidden>
+      <h3>On Reddit</h3>
+      <p class="note" id="redditnote" style="margin-bottom:8px"></p>
+      <ul class="wire" id="reddit"></ul>
     </div>
   </section>
 
@@ -338,7 +411,11 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   const CON_TONE = { 5: 'green', 4: 'yellow', 3: 'orange', 2: 'red', 1: 'red' };
   const TIER_TONE = ['var(--muted)', 'var(--muted)', 'var(--yellow)', 'var(--orange)', 'var(--red)', 'var(--red)'];
   const RUNG_TONE = ['', 'var(--blue)', 'var(--yellow)', 'var(--orange)', 'var(--red)'];
-  const STAKES = { nuclear: ['Nuclear stakes', 'var(--red)'], big: ['Big dog involved', 'var(--orange)'], regional: ['Regional', 'var(--muted)'] };
+  const STAKES = {
+    nuclear: ['Nuclear stakes', 'var(--red)', 'Both sides have nuclear weapons, or a nuclear power faces a US treaty ally. Not that nukes are in use.'],
+    big: ['Big dog involved', 'var(--orange)', 'One side has nuclear weapons.'],
+    regional: ['Regional', 'var(--muted)', 'Neither side has nuclear weapons.'],
+  };
   const n = (x) => Number(x).toLocaleString('en-US');
   let data = null, wireAll = false, spotsXY = [];
 
@@ -514,12 +591,142 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     const ps = d.wire.pressStats;
     $('wirenote').textContent = `Stories from ${d.wire.outlets} outlet${d.wire.outlets === 1 ? '' : 's'}, grouped so one event counts once.` +
       (ps ? ` Across the wider press, ${n(ps.kinetic)} of ${n(ps.articles)} headlines in 24h were about fighting.` : '');
+    const rd = (d.reddit && d.reddit.posts) || [], rdShow = (wireAll ? rd : rd.filter((p) => p.tier >= 2)).slice(0, wireAll ? 16 : 8);
+    $('redditwrap').hidden = !rdShow.length;
+    $('redditnote').textContent = `Newest from ${((d.reddit && d.reddit.subs) || []).map((s) => 'r/' + s).join(', ')} · user-written titles, not scored`;
+    $('reddit').innerHTML = rdShow.map((p) => `<li><span class="chips"><span class="chip" style="color:${p.calm ? 'var(--blue)' : TIER_TONE[p.tier]}">${esc(p.calm ? d.scales.calm : d.scales.beefTypes[p.tier].name)}</span></span><div>${link(p.url, esc(p.title))}</div><div class="meta">r/${esc(p.sub)} · ${ago(p.time)}</div></li>`).join('');
     $('presswrap').hidden = !d.wire.press.length;
     $('press').innerHTML = d.wire.press.map((p) => `<li><div>${link(p.url, esc(p.title))}</div><div class="meta">${p.n} sites, including ${p.sample.map(esc).join(', ')} · ${ago(p.time)}</div></li>`).join('');
   }
 
   // Speed is set in screen pixels per second, so long posts and short headlines move equally fast.
   const TICKER_SPEED = { wire: 44, osint: 44 };
+  // ---- what moved the index since the comparison reading
+  function drawMove(d) {
+    const mv = d.move;
+    $('move').hidden = !mv || !mv.text;
+    if (!mv || !mv.text) return;
+    const max = Math.max(4, ...mv.drivers.map((x) => Math.abs(x.points)));
+    const bars = mv.drivers.slice(0, 4).map((x) => {
+      const w = (Math.abs(x.points) / max) * 50, col = x.points > 0 ? 'var(--red)' : 'var(--green)';
+      const pos = x.points > 0 ? `left:50%;width:${w}%` : `left:${50 - w}%;width:${w}%`;
+      return `<div class="bar" title="${esc(x.name)} went from ${x.from} to ${x.to}: ${esc(x.why)}"><span>${esc(x.name.replace('The ', ''))}</span><div class="lane2"><span style="${pos};background:${col}"></span></div><span class="${x.points > 0 ? 'up' : 'down'}">${x.points > 0 ? '+' : '−'}${Math.abs(x.points)}</span></div>`;
+    }).join('');
+    $('move').innerHTML = `<h3>What moved it</h3><div>${esc(mv.text)}</div>` + (bars ? `<div class="bars">${bars}</div><span class="note">Bars: index points each ingredient's change is worth. Red pushed it up, green pulled it down.</span>` : '');
+  }
+
+  // ---- keyword search: the 48-hour archive (search.json, loaded on first use) plus a live GDELT query
+  const PICKS = ['Iran', 'Russia', 'Ukraine', 'China', 'Taiwan', 'Israel', 'Gaza', 'Venezuela', 'North Korea', 'Houthi', 'nuclear', 'drone strike'];
+  const KINDS = {
+    news: ['News', 'Front pages of major outlets'], defense: ['Defense & regional', 'Defense press and regional papers'],
+    osint: ['OSINT channel', 'Public Telegram OSINT channels, unverified'], reddit: ['Reddit', 'User-posted, unverified'],
+    press: ['Wider press', 'Conflict headlines from thousands of sites, via GDELT'], live: ['Worldwide', 'Live GDELT search of world news'],
+  };
+  let archive = null, archiveTried = false, liveRows = [], liveFor = '', liveState = '', kindFilter = 'all', shown = 40, lastLive = 0, liveTimer;
+  const fromRow = (r) => ({ time: r[0], kind: r[1], source: r[2], title: r[3], url: r[4], tier: r[5], calm: !!r[6] });
+  async function loadArchive() {
+    if (archive || archiveTried) return;
+    archiveTried = true;
+    try {
+      const r = await fetch('search.json?' + (data ? data.generatedAt : Date.now()));
+      if (!r.ok) throw new Error(r.status);
+      archive = (await r.json()).rows.map(fromRow);
+    } catch {
+      archive = null; // snapshot or first run: fall back to what the page itself holds
+    }
+    runSearch();
+  }
+  function pageRows(d) {
+    const rows = [];
+    for (const s of [...d.wire.stories, ...d.wire.quiet]) rows.push({ time: s.time, kind: 'news', source: s.n > 1 ? `${s.source} +${s.n - 1}` : s.source, title: s.title, url: s.url, tier: s.tier, calm: s.calm });
+    for (const p of d.wire.press || []) rows.push({ time: p.time, kind: 'press', source: `${p.n} sites`, title: p.title, url: p.url, tier: p.tier, calm: p.calm });
+    for (const p of (d.osint && d.osint.posts) || []) rows.push({ time: p.time, kind: 'osint', source: p.user, title: p.text, url: p.url, tier: 0 });
+    for (const p of (d.reddit && d.reddit.posts) || []) rows.push({ time: p.time, kind: 'reddit', source: `r/${p.sub}`, title: p.title, url: p.url, tier: p.tier, calm: p.calm });
+    return rows;
+  }
+  const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const wordsOf = (q) => q.toLowerCase().replace(/["']/g, '').split(/\s+/).filter((w) => w.length >= 2);
+  // Every word must appear at the start of a word in the title or source: "iran" finds "Iranian", not "Tiranë".
+  const matcher = (words) => { const res = words.map((w) => new RegExp(`(^|[^a-z0-9])${escRe(w)}`, 'i')); return (t) => res.every((re) => re.test(t)); };
+  function highlight(text, words) {
+    let html = esc(text);
+    for (const w of words) html = html.replace(new RegExp(`(^|[^a-z0-9;])(${escRe(esc(w))})`, 'gi'), '$1<mark>$2</mark>');
+    return html;
+  }
+  async function runLive(q, retried = false) {
+    const words = wordsOf(q);
+    if (words.join(' ').length < 3 || q === liveFor) return;
+    const wait = lastLive + 5200 - Date.now(); // GDELT allows one request every five seconds
+    if (wait > 0) { clearTimeout(liveTimer); liveTimer = setTimeout(() => runLive(q), wait); return; }
+    lastLive = Date.now(); liveFor = q; liveState = 'loading'; liveRows = []; runSearch();
+    const query = words.map((w) => (/\s/.test(w) ? `"${w}"` : w)).join(' ') + ' sourcelang:english';
+    const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(query)}&mode=artlist&format=json&maxrecords=75&sort=hybridrel&timespan=3d`;
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      const text = await r.text();
+      if ($('q').value.trim() !== q) return; // the person has moved on
+      let j; try { j = JSON.parse(text); } catch { throw new Error(text.slice(0, 120) || `HTTP ${r.status}`); }
+      // GDELT matches anywhere in an article's text; keep only those whose headline or link names the search words.
+      const inTitle = matcher(words);
+      liveRows = (j.articles || []).filter((a) => /^https?:\/\//.test(a.url || '') && (inTitle(a.title || '') || inTitle(decodeURIComponent(a.url).replace(/[-_/]+/g, ' ')))).map((a) => {
+        const d = a.seendate || '';
+        return { time: Date.parse(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}T${d.slice(9, 11)}:${d.slice(11, 13)}:${d.slice(13, 15)}Z`) || Date.now(), kind: 'live', source: a.domain || 'GDELT', title: a.title || a.url, url: a.url, tier: 0 };
+      });
+      liveState = liveRows.length ? 'done' : 'empty';
+    } catch (err) {
+      const busy = /limit|5 seconds|failed to fetch|networkerror|load failed/i.test(err.message);
+      // GDELT's "slow down" reply carries no CORS header, so the browser reports it as a failed fetch. Retry once.
+      if (busy && !retried && $('q').value.trim() === q) { liveFor = ''; liveState = 'loading'; runSearch(); clearTimeout(liveTimer); liveTimer = setTimeout(() => { lastLive = 0; runLive(q, true); }, 6000); return; }
+      liveState = 'error:' + (busy ? 'Worldwide search (GDELT) is busy right now. Press Search again in a few seconds.' : err.name === 'TimeoutError' ? 'Worldwide search (GDELT) took too long. Press Search to try again.' : `Worldwide search (GDELT) did not answer: ${err.message}.`);
+      liveFor = '';
+    }
+    runSearch();
+  }
+  function runSearch() {
+    const q = $('q').value.trim(), box = $('hits'), words = wordsOf(q);
+    if (!data || !words.length) { box.hidden = true; box.innerHTML = ''; return; }
+    if (!archive && !archiveTried) { loadArchive(); }
+    const match = matcher(words);
+    const pool = [...(archive || pageRows(data)), ...liveRows];
+    const seen = new Set();
+    // One entry per headline: syndicated copies of the same story fold into it as "also on N sites".
+    const byTitle = new Map();
+    const hits = [];
+    for (const r of pool.filter((r) => match(`${r.title} ${r.source}`) && !seen.has(r.url) && seen.add(r.url)).sort((a, b) => b.time - a.time)) {
+      const key = r.title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      const first = byTitle.get(key);
+      if (first) { first.also.push(r.source); continue; }
+      const row = { ...r, also: [] };
+      byTitle.set(key, row);
+      hits.push(row);
+    }
+    const counts = {}; for (const h of hits) counts[h.kind] = (counts[h.kind] || 0) + 1;
+    const list = kindFilter === 'all' ? hits : hits.filter((h) => h.kind === kindFilter);
+    const sources = new Set(hits.map((h) => h.source)).size;
+    const tabs = ['all', ...Object.keys(KINDS)].filter((k) => k === 'all' || counts[k]).map((k) =>
+      `<button type="button" data-kind="${k}" aria-pressed="${k === kindFilter}" title="${esc(k === 'all' ? '' : KINDS[k][1])}">${k === 'all' ? 'All' : KINDS[k][0]} ${k === 'all' ? hits.length : counts[k]}</button>`).join('');
+    const live = liveState === 'loading' ? 'Searching worldwide news (GDELT)…'
+      : liveState.startsWith('error:') ? liveState.slice(6)
+      : liveState === 'empty' && liveFor === q ? 'No worldwide matches from GDELT in the last 3 days.'
+      : liveFor === q ? `Includes ${liveRows.length} live worldwide results from GDELT (last 3 days).`
+      : 'Press Search (or Enter) to add live worldwide results from GDELT.';
+    const pageHits = [
+      ...(data.fightCard || []).filter((m) => match(`${m.a} ${m.b}`)).map((m) => `Fight card: ${esc(m.a)} vs ${esc(m.b)} (${esc(data.scales.rungs[m.rung - 1].name)})`),
+      ...(data.hotSpots || []).filter((h) => match(h.name)).map((h) => `Hot spot: ${esc(h.name)} (${h.n} reports of force)`),
+    ];
+    box.hidden = false;
+    box.innerHTML =
+      `<p class="note">${hits.length} report${hits.length === 1 ? '' : 's'} from ${sources} source${sources === 1 ? '' : 's'} mention "${esc(q)}", newest first. ${archive ? 'Searching the last 48 hours.' : 'Searching what is on this page (the full archive is not available here).'} ${esc(live)}</p>` +
+      (tabs ? `<div class="tabs tabs-wrap" id="kindtabs">${tabs}</div>` : '') +
+      (list.length ? `<ul class="results">${list.slice(0, shown).map((h) => {
+        const chip = h.tier ? `<span class="chip" style="color:${h.calm ? 'var(--blue)' : TIER_TONE[h.tier]}">${esc(h.calm ? data.scales.calm : data.scales.beefTypes[h.tier].name)}</span>` : '';
+        return `<li><span class="chips"><span class="kind" title="${esc(KINDS[h.kind][1])}">${esc(KINDS[h.kind][0])}</span>${chip}</span><div>${link(h.url, highlight(h.title, words))}</div><div class="meta">${esc(h.source)} · ${ago(h.time)}${h.also.length ? ` · also on ${h.also.length} more site${h.also.length === 1 ? '' : 's'}` : ''}</div></li>`;
+      }).join('')}</ul>` : `<p class="empty">Nothing in the last 48 hours mentions "${esc(q)}"${liveState === 'loading' ? '. Still checking worldwide news…' : '.'}</p>`) +
+      (list.length > shown ? `<button class="more btn" type="button" id="moreres">Show ${Math.min(40, list.length - shown)} more of ${list.length}</button>` : '') +
+      (pageHits.length ? `<p class="note">On the dashboard: ${pageHits.join(' · ')}</p>` : '');
+    try { localStorage.setItem('beef-q', q); } catch { /* per-viewer convenience only */ }
+  }
+
   function fillTicker(el, items, pxPerSec) {
     if (!items.length) { el.innerHTML = '<span>No smoke on the wire.</span>'; return; }
     el.innerHTML = items.join('') + items.join(''); // doubled so the loop is seamless
@@ -563,6 +770,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     const delta = t.d24 != null ? `${t.d24 > 0 ? '+' : ''}${t.d24} on the day` : t.d1 != null ? `${t.d1 > 0 ? '+' : ''}${t.d1} in the last hour` : 'building history';
     $('trend').className = 'trend c-' + (t.key === 'up' ? 'red' : t.key === 'down' ? 'green' : 'yellow');
     $('trend').innerHTML = `<b>${arrow} ${esc(t.label)}</b><span>${delta}</span>`;
+    drawMove(d);
     $('blurb').textContent = d.status.blurb;
     $('parts').innerHTML = d.ingredients.map((i) => i.score == null
       ? `<div class="ing"><span><b>${esc(i.name)}</b></span><span class="pts">no signal</span><span class="d">${esc(i.what)}. Its share goes to the others.</span></div>`
@@ -603,7 +811,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     $('card').innerHTML = d.fightCard.map((m, i) => {
       const rung = d.scales.rungs[m.rung - 1], [stakes, sc] = STAKES[m.stakes] || STAKES.regional;
       const move = m.move === 'up' ? ' · <span class="up">heating up right now</span>' : m.move === 'down' ? ' · <span class="down">quieter right now</span>' : '';
-      return `<div class="bout"><div class="top"><span class="eyebrow">${slots[Math.min(i, 2)]}</span><span class="chips"><span class="chip" style="color:${RUNG_TONE[m.rung]}" title="${esc(rung.what)}">${esc(rung.name)}</span><span class="chip" style="color:${sc}">${stakes}</span></span></div>` +
+      return `<div class="bout"><div class="top"><span class="eyebrow">${slots[Math.min(i, 2)]}</span><span class="chips"><span class="chip" style="color:${RUNG_TONE[m.rung]}" title="${esc(rung.name + ': ' + rung.what)}">${esc(rung.name)}</span><span class="chip" style="color:${sc}" title="${esc(STAKES[m.stakes]?.[2] || '')}">${stakes}</span></span></div>` +
         `<div class="name">${esc(m.a)} <i>vs</i> ${esc(m.b)}</div>` +
         `<div class="split"><span class="k-talk" style="flex:${m.talk}"></span><span class="k-flex" style="flex:${m.flex}"></span><span class="k-hands" style="flex:${m.hands}"></span></div>` +
         `<div class="note">${n(m.talk)} talk · ${n(m.flex)} flexin' · ${n(m.hands)} hands (${m.handsPerHour} an hour)${move}</div></div>`;
@@ -625,7 +833,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     drawHistory(d);
     const lbl = (k) => (d.scales.statuses.find((s) => s.key === k) || {}).label || k;
     $('log').innerHTML = (d.log || []).slice().reverse().slice(0, 6).map((e) =>
-      `<div>${e.kind === 'con' ? `TheseHandsCon ${e.from} → ${e.to}` : `${esc(lbl(e.from))} → ${esc(lbl(e.to))}`} <span class="note">· ${ago(e.t)}</span></div>`).join('')
+      `<div>${e.kind === 'con' ? `TheseHandsCon ${e.from} → ${e.to}` : `${esc(lbl(e.from))} → ${esc(lbl(e.to))}`} <span class="note">· ${ago(e.t)}</span>${e.why ? `<div class="note">${esc(e.why)}</div>` : ''}</div>`).join('')
       || '<p class="note">No level changes logged yet. Changes to the status or TheseHandsCon show up here.</p>';
 
     drawWire(d);
@@ -668,6 +876,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     fillTicker($('xtick'), feed.posts.length
       ? feed.posts.map((p) => `<span><b style="color:var(--blue)">${esc(p.user.toUpperCase())}</b> ${link(p.url, esc(p.text))} <span class="note">${ago(p.time)}</span></span>`)
       : feed.channels.map((c) => `<span>${link('https://t.me/' + encodeURIComponent(c.name), '<b style="color:var(--blue)">' + esc(c.label) + '</b>')} <span class="note">tap to open</span></span>`), TICKER_SPEED.osint);
+    runSearch();
     freshness();
   }
 
@@ -691,6 +900,19 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     }
   }
 
+  $('picks').innerHTML = PICKS.map((p) => `<button type="button" data-q="${esc(p)}">${esc(p)}</button>`).join('');
+  const newQuery = () => { kindFilter = 'all'; shown = 40; };
+  $('picks').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; $('q').value = b.dataset.q; newQuery(); runSearch(); runLive(b.dataset.q); });
+  let searchTimer;
+  $('q').addEventListener('input', () => { newQuery(); clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 150); });
+  $('q').addEventListener('focus', loadArchive, { once: true });
+  $('qform').addEventListener('submit', (e) => { e.preventDefault(); newQuery(); runSearch(); runLive($('q').value.trim()); });
+  $('hits').addEventListener('click', (e) => {
+    const tab = e.target.closest('[data-kind]');
+    if (tab) { kindFilter = tab.dataset.kind; shown = 40; runSearch(); return; }
+    if (e.target.id === 'moreres') { shown += 40; runSearch(); }
+  });
+  try { const saved = localStorage.getItem('beef-q'); if (saved) $('q').value = saved; } catch { /* ignore */ }
   $('tab-hot').onclick = () => { wireAll = false; if (data) drawWire(data); };
   $('tab-all').onclick = () => { wireAll = true; if (data) drawWire(data); };
   $('map').addEventListener('pointermove', pickSpot);

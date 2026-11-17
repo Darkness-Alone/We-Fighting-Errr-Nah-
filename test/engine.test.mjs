@@ -309,3 +309,21 @@ test('TheseHandsCon follows US involvement, not world tension', () => {
   assert.ok(ally.score > notUs && ally.standoffs[0].ally === 'POL');
   assert.equal(sc.usPosture(windowOf({ n: 0 }), 0), null);
 });
+
+test('what moved the index: ranks ingredients by points and writes a summary', () => {
+  const now = 100 * 3600000;
+  const history = [{ t: now - 24 * 3600000, i: 30, a: 30, h: 30, b: 20, m: 10 }];
+  const move = sc.explainMove(history, now, { index: 38, action: 34, chatter: 50, bigdogs: 18, money: 11 });
+  assert.equal(move.change, 8);
+  assert.deepEqual(move.drivers.map((x) => x.key), ['chatter', 'action', 'bigdogs']); // money moved < 2: left out
+  assert.equal(move.drivers[0].points, 7); // 0.35 * 20
+  const text = sc.moveSummary(move, { up: ['Heating up right now: Iran vs US.'] });
+  assert.match(text, /^Up 8 since yesterday \(30 → 38\)\. Biggest push: The Chatter \+20/);
+  assert.match(text, /Pulling the other way: The Big Dogs −2/);
+  assert.match(text, /Heating up right now: Iran vs US\./);
+  // Nothing to compare against yet.
+  assert.equal(sc.explainMove([], now, { index: 30 }), null);
+  // Falls back to a recent reading, and calls a small move steady.
+  const steady = sc.explainMove([{ t: now - 3600000, i: 30, a: 30, h: 30, b: 20 }], now, { index: 31, action: 30, chatter: 31, bigdogs: 20 });
+  assert.match(sc.moveSummary(steady), /^Holding steady in the last hour/);
+});

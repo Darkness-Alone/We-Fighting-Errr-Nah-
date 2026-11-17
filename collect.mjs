@@ -19,6 +19,8 @@ import { theaterOfText, countryName, usFoeWeight, US_PEERS } from './lib/geo.mjs
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const DATA_FILE = path.join(ROOT, 'public', 'data.json');
 export const STATE_FILE = path.join(ROOT, 'public', 'state.json');
+export const SEARCH_FILE = path.join(ROOT, 'public', 'search.json');
+const SEARCH_HOURS = 48;
 
 // The Bulletin of the Atomic Scientists sets this once a year, in late January. Update it by hand then.
 const DOOMSDAY_OFFICIAL = { seconds: 85, setOn: '2026-01-27', source: 'Bulletin of the Atomic Scientists' };
@@ -83,16 +85,17 @@ export async function collect(now = Date.now()) {
 
   // ---- fetch everything at once
   const feedJobs = src.FEEDS.map((f) => src.fetchFeed(f).then((items) => ({ f, items }), (err) => ({ f, err })));
-  const [latest, feeds, quakes, nukeTests, kp, sky, money, advisories, tgFeed] = await Promise.all([
+  const [latest, feeds, quakes, nukeTests, kp, sky, money, advisories, tgFeed, redditRaw] = await Promise.all([
     attempt('GDELT', () => src.fetchGdeltLatest(gd.GDELT_BASE), sources, () => ''),
     Promise.all(feedJobs),
     attempt('USGS earthquakes', src.fetchQuakes, sources),
     attempt('USGS nuclear-test watch', () => src.fetchNukeTests(now), sources, (v) => (v.length ? `${v.length} detected` : 'none detected')),
     attempt('NOAA space weather', src.fetchKp, sources, (v) => `Kp ${v.kp}`),
-    attempt('adsb.lol military aircraft', src.fetchSky, sources, (v) => `${v.airborne} airborne`),
+    attempt('Military aircraft (adsb.lol + adsb.fi)', src.fetchSky, sources, (v) => `${v.airborne} airborne via ${v.feeds.join(' + ')}`),
     attempt('FRED markets', () => src.fetchMoney(now), sources, (v) => Object.keys(v).join(', ')),
     attempt('State Dept advisories', () => src.fetchAdvisories(now), sources, (v) => `${v.total} countries`),
     attempt('OSINT channels on Telegram', () => src.fetchTelegram(now), sources, (v) => `${v.posts.length} posts (${v.report})`),
+    attempt('Reddit', src.fetchReddit, sources, (v) => `${v.length} posts`),
   ]);
 
   // A good batch of channel posts is kept for up to six hours in case Telegram refuses a run.
@@ -101,6 +104,17 @@ export async function collect(now = Date.now()) {
   if (!tgFeed && tgKept) {
     const s = sources.find((x) => x.name === 'OSINT channels on Telegram');
     Object.assign(s, { ok: true, cached: true, note: `no answer this time, showing ${tgPosts.length} posts from earlier` });
+  }
+
+  // Reddit: newest posts from the war and world-news subreddits, tagged with a beef type. A good batch is
+  // reused for six hours when Reddit rate-limits a run.
+  const redditFresh = redditRaw
+    ? redditRaw.filter((p) => now - p.time < 24 * HOUR).map((p) => ({ title: p.title, url: p.url, sub: p.sub, time: p.time, ...classify(p.title) }))
+    : null;
+  const redditKept = state.reddit && now - state.reddit.t < 6 * HOUR ? state.reddit.posts : [];
+  const reddit = (redditFresh || redditKept).filter((p) => now - p.time < 24 * HOUR).sort((a, b) => b.time - a.time).slice(0, 60);
+  if (!redditFresh && redditKept.length) {
+    Object.assign(sources.find((x) => x.name === 'Reddit'), { ok: true, cached: true, note: `rate-limited this time, showing ${reddit.length} posts from earlier` });
   }
 
   // ---- GDELT: bring the 24h store up to date
@@ -204,8 +218,8 @@ export async function collect(now = Date.now()) {
   const why = [];
   if (handsCon) {
     for (const t of freshTest) why.push(`Seismic network logged a nuclear explosion: ${t.title}. That alone means level 3 or tighter`);
-    for (const m of peerFight) why.push(`The US and ${countryName(m.a === 'USA' ? m.b : m.a)} are trading blows right now. That alone means level 3 or tighter`);
-    for (const m of usSwing.slice(0, 2)) why.push(`US forces are trading fire with ${countryName(m.a === 'USA' ? m.b : m.a)}: ${m.hands} reports of force in 24h. That alone means level 4 or tighter`);
+    for (const m of peerFight) why.push(`Heavy reporting of force between the US and ${countryName(m.a === 'USA' ? m.b : m.a)} right now (${m.handsPerHour.toFixed(1)} articles an hour). That alone means level 3 or tighter`);
+    for (const m of usSwing.slice(0, 2)) why.push(`News reports describe force between the US and ${countryName(m.a === 'USA' ? m.b : m.a)}: ${m.hands} articles in 24h. That alone means level 4 or tighter`);
     const st = usD?.standoffs[0];
     if (st) why.push(st.ally
       ? `Closest call with a nuclear rival: ${countryName(st.ally)}, a US ally, vs ${countryName(st.foe)}`
@@ -219,12 +233,25 @@ export async function collect(now = Date.now()) {
   const doom = sc.doomScore(nuclearEsc, nuke, freshTest.length > 0);
   const beefSeconds = sc.beefClockSeconds(DOOMSDAY_OFFICIAL.seconds, doom);
 
+  // ---- what moved the index (before this reading joins the history)
+  const card = gdeltOk ? sc.fightCard(day, recent) : [];
+  const move = index == null ? null : sc.explainMove(history, now, { index, action, chatter, bigdogs, money: moneyScore });
+  const hints = { up: [], down: [] };
+  const heating = card.filter((m) => m.move === 'up').slice(0, 2).map((m) => `${m.a} vs ${m.b}`);
+  const cooling = card.filter((m) => m.move === 'down').slice(0, 2).map((m) => `${m.a} vs ${m.b}`);
+  if (heating.length) hints.up.push(`Heating up right now: ${heating.join(', ')}.`);
+  if (cooling.length) hints.down.push(`Quieter right now: ${cooling.join(', ')}.`);
+  if (smoke[0]) hints.up.push(`Leading story: "${smoke[0].title}".`);
+  const calmStory = stories.find((s) => s.calm && s.tier);
+  if (calmStory) hints.down.push(`Cooling story: "${calmStory.title}".`);
+  const moveText = sc.moveSummary(move, hints);
+
   // ---- history, change log
   const log = state.log || [];
   if (index != null) {
     const prev = state.last;
-    if (prev?.status && prev.status !== status.key) log.push({ t: now, kind: 'status', from: prev.status, to: status.key });
-    if (prev?.con && handsCon && prev.con !== handsCon.level) log.push({ t: now, kind: 'con', from: prev.con, to: handsCon.level });
+    if (prev?.status && prev.status !== status.key) log.push({ t: now, kind: 'status', from: prev.status, to: status.key, why: moveText });
+    if (prev?.con && handsCon && prev.con !== handsCon.level) log.push({ t: now, kind: 'con', from: prev.con, to: handsCon.level, why: why[0] || moveText });
     history.push({
       t: now, i: index, x: Math.round(smoothed * 10) / 10, c: handsCon?.level, d: beefSeconds,
       a: orNull(action), h: orNull(chatter), b: orNull(bigdogs), m: orNull(moneyScore),
@@ -234,7 +261,6 @@ export async function collect(now = Date.now()) {
   const kept = thin(history, now);
 
   // ---- the page's parts
-  const card = gdeltOk ? sc.fightCard(day, recent) : [];
   const theaters = sc.theaterBoard(day, stories);
   const ingredients = Object.keys(sc.WEIGHTS).map((key) => ({
     key, ...sc.INGREDIENTS[key], score: orNull(parts[key]), points: mix.contributions[key] ?? null,
@@ -258,6 +284,7 @@ export async function collect(now = Date.now()) {
   if (index != null) {
     const moved = d24 == null ? '' : d24 === 0 ? ', flat on the day' : `, ${d24 > 0 ? 'up' : 'down'} ${Math.abs(d24)} on the day`;
     rundown.push(`The We Beefin Index reads ${index}${moved}: ${status.label}.${trend.key === 'new' ? '' : ` ${trend.label}.`}`);
+    if (moveText && move && Math.abs(move.change) >= 2) rundown.push(`What moved it: ${moveText}`);
     if (card[0]) {
       const rest = card.slice(1, 4).map((m) => `${m.a} vs ${m.b} (${sc.RUNGS[m.rung - 1].name})`);
       rundown.push(`Main event is ${card[0].a} vs ${card[0].b}, ${sc.RUNGS[card[0].rung - 1].name}, with ${card[0].hands} reports of force in 24 hours.${rest.length ? ` Also on the card: ${rest.join(', ')}.` : ''}`);
@@ -271,6 +298,7 @@ export async function collect(now = Date.now()) {
     version: 2,
     generatedAt: now,
     index, raw: orNull(mix.raw), status, trend, confidence,
+    move: move && { ...move, text: moveText },
     ingredients,
     handsCon: handsCon && { ...handsCon, score: round(posture), why },
     doomsday: {
@@ -296,6 +324,7 @@ export async function collect(now = Date.now()) {
     money: money || null,
     advisories: advisories || null,
     osint: { channels: src.TG_CHANNELS, posts: tgPosts },
+    reddit: { subs: src.SUBREDDITS, posts: reddit },
     nature: { quakes: (quakes || []).slice(0, 5), kp: kp || null },
     gdelt: gdeltOk ? { latest: gd.stampToMs(store.latest), events: day.n, hours: day.hours } : null,
     sources,
@@ -306,16 +335,36 @@ export async function collect(now = Date.now()) {
 
   const next = {
     gdelt: store, history: kept, log: log.slice(-12), tg: tgFeed ? { t: now, posts: tgFeed.posts } : state.tg,
+    reddit: redditFresh ? { t: now, posts: redditFresh } : state.reddit,
     last: index == null ? state.last : { t: now, x: smoothed, status: status.key, con: handsCon?.level },
   };
-  return { data, state: next };
+  // ---- keyword-search archive: everything the sources returned in the last 48 hours.
+  // Row: [time, kind, source, title, url, tier, calm]. kind: news | defense | osint | reddit | press.
+  const row = (time, kind, source, title, url, tier, calm) => [time, kind, source, title, url, tier || 0, calm ? 1 : 0];
+  const fresh = [
+    ...items.map((it) => row(it.time, it.kind === 'front' ? 'news' : 'defense', it.source, it.title, it.url, it.tier, it.calm)),
+    ...(tgFeed ? tgFeed.all : []).map((p) => row(p.time, 'osint', p.user, p.text, p.url, classify(p.text).tier, classify(p.text).calm)),
+    ...(redditFresh || []).map((p) => row(p.time, 'reddit', `r/${p.sub}`, p.title, p.url, p.tier, p.calm)),
+  ];
+  const seenUrl = new Set();
+  const archive = [...fresh, ...(state.archive || [])]
+    .filter((r) => r[0] > now - SEARCH_HOURS * HOUR && r[0] < now + HOUR && !seenUrl.has(r[4]) && seenUrl.add(r[4]))
+    .slice(0, 6000);
+  next.archive = archive;
+  // GDELT headlines (rebuilt from the 24h event store each run, so not kept in the archive)
+  const wider = gdeltOk ? day.find.filter((f) => !seenUrl.has(f.url) && seenUrl.add(f.url))
+    .map((f) => row(f.time, 'press', f.source, prettySlug(f.title), f.url, f.tier, f.calm)) : [];
+  const search = { generatedAt: now, hours: SEARCH_HOURS, rows: [...archive, ...wider].sort((a, b) => b[0] - a[0]).slice(0, 15000) };
+
+  return { data, state: next, search };
 }
 
 export async function collectAndWrite() {
-  const { data, state } = await collect();
+  const { data, state, search } = await collect();
   await mkdir(path.dirname(DATA_FILE), { recursive: true });
   await writeFile(DATA_FILE, JSON.stringify(data));
   await writeFile(STATE_FILE, JSON.stringify(state));
+  await writeFile(SEARCH_FILE, JSON.stringify(search));
   return data;
 }
 
