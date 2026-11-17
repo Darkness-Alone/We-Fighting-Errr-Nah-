@@ -689,7 +689,17 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     const match = matcher(words);
     const pool = [...(archive || pageRows(data)), ...liveRows];
     const seen = new Set();
-    const hits = pool.filter((r) => match(`${r.title} ${r.source}`) && !seen.has(r.url) && seen.add(r.url)).sort((a, b) => b.time - a.time);
+    // One entry per headline: syndicated copies of the same story fold into it as "also on N sites".
+    const byTitle = new Map();
+    const hits = [];
+    for (const r of pool.filter((r) => match(`${r.title} ${r.source}`) && !seen.has(r.url) && seen.add(r.url)).sort((a, b) => b.time - a.time)) {
+      const key = r.title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      const first = byTitle.get(key);
+      if (first) { first.also.push(r.source); continue; }
+      const row = { ...r, also: [] };
+      byTitle.set(key, row);
+      hits.push(row);
+    }
     const counts = {}; for (const h of hits) counts[h.kind] = (counts[h.kind] || 0) + 1;
     const list = kindFilter === 'all' ? hits : hits.filter((h) => h.kind === kindFilter);
     const sources = new Set(hits.map((h) => h.source)).size;
@@ -710,7 +720,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
       (tabs ? `<div class="tabs tabs-wrap" id="kindtabs">${tabs}</div>` : '') +
       (list.length ? `<ul class="results">${list.slice(0, shown).map((h) => {
         const chip = h.tier ? `<span class="chip" style="color:${h.calm ? 'var(--blue)' : TIER_TONE[h.tier]}">${esc(h.calm ? data.scales.calm : data.scales.beefTypes[h.tier].name)}</span>` : '';
-        return `<li><span class="chips"><span class="kind" title="${esc(KINDS[h.kind][1])}">${esc(KINDS[h.kind][0])}</span>${chip}</span><div>${link(h.url, highlight(h.title, words))}</div><div class="meta">${esc(h.source)} · ${ago(h.time)}</div></li>`;
+        return `<li><span class="chips"><span class="kind" title="${esc(KINDS[h.kind][1])}">${esc(KINDS[h.kind][0])}</span>${chip}</span><div>${link(h.url, highlight(h.title, words))}</div><div class="meta">${esc(h.source)} · ${ago(h.time)}${h.also.length ? ` · also on ${h.also.length} more site${h.also.length === 1 ? '' : 's'}` : ''}</div></li>`;
       }).join('')}</ul>` : `<p class="empty">Nothing in the last 48 hours mentions "${esc(q)}"${liveState === 'loading' ? '. Still checking worldwide news…' : '.'}</p>`) +
       (list.length > shown ? `<button class="more btn" type="button" id="moreres">Show ${Math.min(40, list.length - shown)} more of ${list.length}</button>` : '') +
       (pageHits.length ? `<p class="note">On the dashboard: ${pageHits.join(' · ')}</p>` : '');
