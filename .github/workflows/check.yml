@@ -21,5 +21,3 @@ jobs:
       - run: node --test
       - name: Dry reading
         run: node collect.mjs
-      - name: Probe candidate sources (temporary)
-        run: node scripts/probe.mjs

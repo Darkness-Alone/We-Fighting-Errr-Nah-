@@ -94,3 +94,19 @@ test('Telegram channel preview: recent English posts with links', () => {
   assert.throws(() => parseTelegram('<html>redirect</html>', TG_CHANNELS[0], now));
   assert.equal(new Set(TG_CHANNELS.map((c) => c.name)).size, TG_CHANNELS.length);
 });
+
+test('Reddit Atom feed: subreddit taken from the post link', async () => {
+  const { parseReddit } = await import('../lib/sources.mjs');
+  const xml = `<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Missile strike hits port city</title>
+    <link href="https://www.reddit.com/r/worldnews/comments/abc123/missile_strike_hits_port_city/"/><updated>2026-11-17T10:00:00+00:00</updated></entry>
+    <entry><title>Off-site link only</title><link href="https://example.com/x"/><updated>2026-11-17T10:00:00+00:00</updated></entry></feed>`;
+  const posts = parseReddit(xml);
+  assert.equal(posts.length, 1);
+  assert.equal(posts[0].sub, 'worldnews');
+});
+
+test('aircraft from two networks are merged by transponder code', async () => {
+  const { mergeAircraft } = await import('../lib/sources.mjs');
+  const merged = mergeAircraft([[{ hex: 'ae1', t: 'K35R' }, { hex: 'ae2', t: 'C17' }], [{ hex: 'ae2', t: 'C17' }, { hex: 'ae3', t: 'B52' }], null]);
+  assert.deepEqual(merged.map((a) => a.hex), ['ae1', 'ae2', 'ae3']);
+});

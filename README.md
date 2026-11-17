@@ -20,8 +20,11 @@ No dependencies, no API keys, no accounts. Just Node.
 | **The Fight Card** | Country-vs-country matchups: how much is talk, how much is flexin', how much is hands |
 | **Doomsday Watch** | The official Doomsday Clock, a live Beef Clock, a nuclear-test check, and every clock setting since 1947 |
 | **Trend & Beef Log** | The index over the last 7 days and every change of status or level |
+| **Search** | Type a word (a country, a place, "drone") to find it across headlines, OSINT posts, Reddit, the fight card, hot spots and regions |
+| **What moved it** | Under the gauge: how much the index moved and which ingredients pushed it, with the stories and matchups behind the move |
 | **The Wire** | Headlines grouped into stories, each tagged with a beef type and how many outlets carry it |
 | **OSINT scroller** | Latest English posts from public OSINT channels on Telegram, or links to them when none come through. Shown, never scored |
+| **On Reddit** | Newest posts from r/worldnews, r/geopolitics, r/CredibleDefense, r/UkrainianConflict and r/CombatFootage. Shown, never scored |
 | **Birds Up** | Military aircraft in the air: doomsday planes, bombers, tankers, spy planes, airlift |
 | **The Money** | Wall Street's fear gauge and the oil price |
 | **Do Not Pull Up List** | Countries the US State Department says not to travel to |
@@ -135,7 +138,8 @@ South Asia, so the India–Pakistan days read lower than they felt.
 | Defense News, Breaking Defense, The War Zone, USNI News, Times of Israel, Kyiv Independent, Yonhap, UN News | The Wire and regional heat |
 | USGS | Significant earthquakes, and its catalog of detected nuclear explosions |
 | NOAA Space Weather Prediction Center | Planetary Kp index |
-| adsb.lol | Military aircraft in the air |
+| adsb.lol and adsb.fi | Military aircraft in the air (merged; either one can be down) |
+| Reddit (public RSS) | The On Reddit list and search |
 | FRED (St. Louis Fed) | VIX and Brent crude, daily closes |
 | US State Department | Travel advisories |
 | Telegram public channel previews (t.me/s) | Posts from the channels in `TG_CHANNELS`, for the scroller only |
@@ -154,6 +158,19 @@ Things to know:
 - **The OSINT scroller mixes sides on purpose.** Several channels are partisan or state-linked
   (IDF, Quds News Network, Rybar, Intel Slava). Their posts are unverified and never scored.
 - **Birds Up needs a week.** It only judges what is unusual after 48 readings of its own baseline.
+
+### Sources that were asked for but are not used
+
+Each was tested from GitHub's servers, where the hosted page is built.
+
+| Source | Why not |
+| --- | --- |
+| Flightradar24 | Behind a bot wall (HTTP 403), and its terms forbid scraping. adsb.lol and adsb.fi cover military aircraft instead |
+| ADS-B Exchange | Its data is a paid API. adsb.fi, run on the same kind of volunteer receivers, is used instead |
+| Liveuamap | Blocks servers (HTTP 403) and has no free feed |
+| PullPush (Reddit archive) | Behind a bot wall (HTTP 403). Reddit's own RSS works and is used |
+| Ground News | No feed or API; only its web page |
+| ACLED | Needs a registered account. It could be added with your login stored as a GitHub secret |
 
 ## Run it
 

@@ -168,6 +168,36 @@ p { margin: 0; }
 .tags span { border: 1px solid var(--line); padding: 1px 7px; font-size: 12px; }
 .up { color: var(--red); } .down { color: var(--green); }
 
+/* search */
+.search { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
+.search input { flex: 1 1 260px; min-width: 0; font: inherit; font-size: 14px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); padding: 9px 12px; }
+.search input:focus { outline: 2px solid var(--blue); outline-offset: 0; }
+.picks { display: flex; flex-wrap: wrap; gap: 6px; }
+.picks button { font-size: 11.5px; background: none; color: var(--muted); border: 1px solid var(--line); padding: 3px 9px; cursor: pointer; }
+.picks button:hover { color: var(--fg); border-color: var(--muted); }
+.hits { display: grid; gap: var(--s3); }
+.hits h3 { margin-bottom: 4px; }
+.hits ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.hits li { font-size: 13px; }
+mark { background: color-mix(in srgb, var(--yellow) 35%, transparent); color: inherit; padding: 0 1px; }
+
+/* what moved it */
+.move { width: 100%; max-width: 560px; text-align: left; border: 1px solid var(--line); background: var(--panel-2); padding: 10px 12px; display: grid; gap: 6px; font-size: 12.5px; }
+.move .bars { display: grid; gap: 4px; }
+.move .bar { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 3.2em; gap: var(--s2); align-items: center; }
+.move .lane2 { position: relative; height: 8px; background: var(--panel); border: 1px solid var(--line); }
+.move .lane2 span { position: absolute; top: 0; bottom: 0; }
+.move .lane2::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; border-left: 1px solid var(--muted); }
+
+/* explainers */
+details.explain { border-top: 1px solid var(--line); padding-top: var(--s2); }
+details.explain summary { color: var(--blue); font-size: 12.5px; }
+dl.terms { margin: var(--s2) 0 0; display: grid; grid-template-columns: minmax(7.5em, max-content) minmax(0, 1fr); gap: 6px 12px; font-size: 12.5px; }
+dl.terms dt { font-weight: 700; }
+dl.terms dd { margin: 0; color: var(--muted); }
+dl.terms dd b { color: var(--fg); font-weight: 500; }
+@media (max-width: 480px) { dl.terms { grid-template-columns: minmax(0, 1fr); } dl.terms dd { margin-bottom: 4px; } }
+
 /* receipts */
 .srcs { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; margin: 0; padding: 0; list-style: none; }
 .srcs li::before { content: "● "; color: var(--green); }
@@ -199,12 +229,21 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   <div class="ticker" aria-label="Posts from OSINT channels on Telegram"><span class="tag" style="color:var(--blue)">OSINT</span><div class="lane"><div class="run" id="xtick"></div></div></div>
   <div class="alert" id="alert" hidden></div>
 
+  <section class="panel" aria-label="Search">
+    <div class="search">
+      <input id="q" type="search" placeholder="Search everything on the page: a country, a place, a word…" autocomplete="off" aria-label="Keyword search">
+      <div class="picks" id="picks"></div>
+    </div>
+    <div class="hits" id="hits" hidden></div>
+  </section>
+
   <div class="grid two">
     <section class="panel hero" id="hero">
       <p class="eyebrow">We Beefin Index</p>
       <h1>Status: <span id="status">…</span></h1>
       <svg class="gauge" id="gauge" viewBox="0 0 400 222" role="img" aria-label="We Beefin Index gauge"></svg>
       <div class="trend" id="trend"></div>
+      <div class="move" id="move" hidden></div>
       <p class="note" id="blurb"></p>
       <div class="parts">
         <h3>What's in the number</h3>
@@ -239,8 +278,29 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     </section>
     <section class="panel">
       <header><h2>The Fight Card</h2><span class="note">Country vs country, last 24h</span></header>
-      <span class="key"><span><i class="k-talk"></i>talk</span><span><i class="k-flex"></i>flexin' (threats, sanctions, troop moves)</span><span><i class="k-hands"></i>hands (strikes, clashes)</span></span>
+      <span class="key"><span><i class="k-talk"></i>talk</span><span><i class="k-flex"></i>flexin' (threats, sanctions, troop moves)</span><span><i class="k-hands"></i>hands (strikes, clashes, attacks)</span></span>
       <div class="stack" id="card"></div>
+      <details class="explain" id="cardhelp">
+        <summary>What the fight card means</summary>
+        <dl class="terms">
+          <dt>The numbers</dt><dd>Each number is a count of <b>news articles</b> in the last 24 hours that report one country doing that thing to the other, as coded by the GDELT project from news worldwide. It is not a count of attacks: one big strike can be reported by hundreds of articles. Use it to compare matchups, not as a casualty count.</dd>
+          <dt>Bar: Talk (blue)</dt><dd>Words only: statements, accusations, demands, appeals, criticism, meetings and negotiations.</dd>
+          <dt>Bar: Flexin' (yellow)</dt><dd>Pressure short of shooting: threats and ultimatums, sanctions and embargoes, cutting ties or expelling diplomats, troop and naval movements, blockades, military drills, alerts.</dd>
+          <dt>Bar: Hands (red)</dt><dd>Physical force: strikes and bombardments, attacks on bases or ships, assassinations, seizures, and clashes.</dd>
+          <dt>Clashes</dt><dd>Armed forces of the two sides actually firing on each other: firefights, skirmishes, border shootouts, an aircraft or drone being shot down. A one-sided strike counts as "hands" too, but a clash means both sides are engaging.</dd>
+          <dt>An hour</dt><dd>Hands articles per hour over the last 24 hours. Above about 6 an hour is war-level coverage.</dd>
+          <dt>Heating up / quieter right now</dt><dd>The last 6 hours are running well above, or well below, the 24-hour pace.</dd>
+          <dt>Main event, co-main, undercard</dt><dd>Billing order: the hottest matchup is the main event.</dd>
+          <dt>Badge: Talkin' Spicy</dt><dd>Mostly words. Tension, but nothing physical.</dd>
+          <dt>Badge: Flexin'</dt><dd>At least a third of the coverage is threats or pressure moves, or the pressure is heavy.</dd>
+          <dt>Badge: Swingin'</dt><dd>Force is being used: at least a quarter of the coverage is hands, at half an article an hour or more.</dd>
+          <dt>Badge: Full Send</dt><dd>Sustained, war-level fighting: 6 or more hands articles an hour.</dd>
+          <dt>Badge: Nuclear stakes</dt><dd>A fight here could go nuclear because <b>both sides have nuclear weapons</b> (US vs Russia, India vs Pakistan), or because a nuclear power is squaring off with a country the US is <b>treaty-bound to defend</b> (Russia vs a NATO member, China vs Taiwan or Japan, North Korea vs South Korea). It does not mean nuclear weapons are in use.</dd>
+          <dt>Badge: Big dog involved</dt><dd>One side has nuclear weapons (US, Russia, China, UK, France, India, Pakistan, Israel, North Korea), or Iran faces a nuclear power. Serious, but a step below nuclear stakes.</dd>
+          <dt>Badge: Regional</dt><dd>Neither side has nuclear weapons. Deadly, but less able to spread into a world war.</dd>
+          <dt>Not shown</dt><dd>Allies bickering (US vs UK, say) and matchups with fewer than 6 articles.</dd>
+        </dl>
+      </details>
     </section>
   </div>
 
@@ -269,6 +329,11 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     <div id="presswrap" hidden>
       <h3 style="margin-bottom:8px">Also running widely</h3>
       <ul class="wire" id="press"></ul>
+    </div>
+    <div id="redditwrap" hidden>
+      <h3>On Reddit</h3>
+      <p class="note" id="redditnote" style="margin-bottom:8px"></p>
+      <ul class="wire" id="reddit"></ul>
     </div>
   </section>
 
@@ -338,7 +403,11 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   const CON_TONE = { 5: 'green', 4: 'yellow', 3: 'orange', 2: 'red', 1: 'red' };
   const TIER_TONE = ['var(--muted)', 'var(--muted)', 'var(--yellow)', 'var(--orange)', 'var(--red)', 'var(--red)'];
   const RUNG_TONE = ['', 'var(--blue)', 'var(--yellow)', 'var(--orange)', 'var(--red)'];
-  const STAKES = { nuclear: ['Nuclear stakes', 'var(--red)'], big: ['Big dog involved', 'var(--orange)'], regional: ['Regional', 'var(--muted)'] };
+  const STAKES = {
+    nuclear: ['Nuclear stakes', 'var(--red)', 'Both sides have nuclear weapons, or a nuclear power faces a US treaty ally. Not that nukes are in use.'],
+    big: ['Big dog involved', 'var(--orange)', 'One side has nuclear weapons.'],
+    regional: ['Regional', 'var(--muted)', 'Neither side has nuclear weapons.'],
+  };
   const n = (x) => Number(x).toLocaleString('en-US');
   let data = null, wireAll = false, spotsXY = [];
 
@@ -514,12 +583,66 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     const ps = d.wire.pressStats;
     $('wirenote').textContent = `Stories from ${d.wire.outlets} outlet${d.wire.outlets === 1 ? '' : 's'}, grouped so one event counts once.` +
       (ps ? ` Across the wider press, ${n(ps.kinetic)} of ${n(ps.articles)} headlines in 24h were about fighting.` : '');
+    const rd = (d.reddit && d.reddit.posts) || [], rdShow = (wireAll ? rd : rd.filter((p) => p.tier >= 2)).slice(0, wireAll ? 16 : 8);
+    $('redditwrap').hidden = !rdShow.length;
+    $('redditnote').textContent = `Newest from ${((d.reddit && d.reddit.subs) || []).map((s) => 'r/' + s).join(', ')} · user-written titles, not scored`;
+    $('reddit').innerHTML = rdShow.map((p) => `<li><span class="chips"><span class="chip" style="color:${p.calm ? 'var(--blue)' : TIER_TONE[p.tier]}">${esc(p.calm ? d.scales.calm : d.scales.beefTypes[p.tier].name)}</span></span><div>${link(p.url, esc(p.title))}</div><div class="meta">r/${esc(p.sub)} · ${ago(p.time)}</div></li>`).join('');
     $('presswrap').hidden = !d.wire.press.length;
     $('press').innerHTML = d.wire.press.map((p) => `<li><div>${link(p.url, esc(p.title))}</div><div class="meta">${p.n} sites, including ${p.sample.map(esc).join(', ')} · ${ago(p.time)}</div></li>`).join('');
   }
 
   // Speed is set in screen pixels per second, so long posts and short headlines move equally fast.
   const TICKER_SPEED = { wire: 44, osint: 44 };
+  // ---- what moved the index since the comparison reading
+  function drawMove(d) {
+    const mv = d.move;
+    $('move').hidden = !mv || !mv.text;
+    if (!mv || !mv.text) return;
+    const max = Math.max(4, ...mv.drivers.map((x) => Math.abs(x.points)));
+    const bars = mv.drivers.slice(0, 4).map((x) => {
+      const w = (Math.abs(x.points) / max) * 50, col = x.points > 0 ? 'var(--red)' : 'var(--green)';
+      const pos = x.points > 0 ? `left:50%;width:${w}%` : `left:${50 - w}%;width:${w}%`;
+      return `<div class="bar" title="${esc(x.name)} went from ${x.from} to ${x.to}: ${esc(x.why)}"><span>${esc(x.name.replace('The ', ''))}</span><div class="lane2"><span style="${pos};background:${col}"></span></div><span class="${x.points > 0 ? 'up' : 'down'}">${x.points > 0 ? '+' : '−'}${Math.abs(x.points)}</span></div>`;
+    }).join('');
+    $('move').innerHTML = `<h3>What moved it</h3><div>${esc(mv.text)}</div>` + (bars ? `<div class="bars">${bars}</div><span class="note">Bars: index points each ingredient's change is worth. Red pushed it up, green pulled it down.</span>` : '');
+  }
+
+  // ---- keyword search over everything the page holds
+  const PICKS = ['Iran', 'Russia', 'Ukraine', 'China', 'Taiwan', 'Israel', 'Gaza', 'North Korea', 'nuclear', 'drone', 'missile', 'ceasefire'];
+  function searchIndex(d) {
+    const rows = [];
+    const add = (group, text, url, meta) => text && rows.push({ group, text: String(text), url, meta: meta || '' });
+    for (const s of [...d.wire.stories, ...d.wire.quiet]) add('Headlines', s.title, s.url, `${s.n > 1 ? s.n + ' outlets' : s.source} · ${ago(s.time)}`);
+    for (const p of d.wire.press || []) add('Wider press', p.title, p.url, `${p.n} sites · ${ago(p.time)}`);
+    for (const p of (d.osint && d.osint.posts) || []) add('OSINT channels', p.text, p.url, `${p.user} · ${ago(p.time)}`);
+    for (const p of (d.reddit && d.reddit.posts) || []) add('Reddit', p.title, p.url, `r/${p.sub} · ${ago(p.time)}`);
+    for (const m of d.fightCard || []) add('Fight card', `${m.a} vs ${m.b}`, null, `${d.scales.rungs[m.rung - 1].name} · ${n(m.hands)} hands, ${n(m.talk)} talk, ${n(m.flex)} flexin'`);
+    for (const s of d.hotSpots || []) add('Hot spots', s.name, null, `${s.n} reports of force in 24h`);
+    for (const t of d.theaters || []) add('Regions', t.name + (t.top ? ` — ${t.top.title}` : ''), t.top && t.top.url, `heat ${t.heat}`);
+    for (const r of d.rundown || []) add('Rundown', r, null, '');
+    if (d.advisories) for (const c of d.advisories.doNotTravel) add('Do Not Travel list', c, null, 'US State Department Level 4');
+    return rows;
+  }
+  const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  function highlight(text, words) {
+    let html = esc(text);
+    for (const w of words) html = html.replace(new RegExp(`(${escRe(esc(w))})`, 'gi'), '<mark>$1</mark>');
+    return html;
+  }
+  function runSearch() {
+    const q = $('q').value.trim();
+    const box = $('hits');
+    if (!data || q.length < 2) { box.hidden = true; box.innerHTML = ''; return; }
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const hits = searchIndex(data).filter((r) => { const t = (r.text + ' ' + r.meta).toLowerCase(); return words.every((w) => t.includes(w)); });
+    const groups = new Map();
+    for (const h of hits) { if (!groups.has(h.group)) groups.set(h.group, []); groups.get(h.group).push(h); }
+    box.hidden = false;
+    box.innerHTML = `<p class="note">${hits.length} match${hits.length === 1 ? '' : 'es'} for "${esc(q)}"</p>` + [...groups].map(([g, list]) =>
+      `<div><h3>${esc(g)} · ${list.length}</h3><ul>${list.slice(0, 12).map((h) => `<li>${h.url ? link(h.url, highlight(h.text, words)) : highlight(h.text, words)}${h.meta ? ` <span class="note">· ${esc(h.meta)}</span>` : ''}</li>`).join('')}</ul></div>`).join('');
+    try { localStorage.setItem('beef-q', q); } catch { /* per-viewer convenience only */ }
+  }
+
   function fillTicker(el, items, pxPerSec) {
     if (!items.length) { el.innerHTML = '<span>No smoke on the wire.</span>'; return; }
     el.innerHTML = items.join('') + items.join(''); // doubled so the loop is seamless
@@ -563,6 +686,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     const delta = t.d24 != null ? `${t.d24 > 0 ? '+' : ''}${t.d24} on the day` : t.d1 != null ? `${t.d1 > 0 ? '+' : ''}${t.d1} in the last hour` : 'building history';
     $('trend').className = 'trend c-' + (t.key === 'up' ? 'red' : t.key === 'down' ? 'green' : 'yellow');
     $('trend').innerHTML = `<b>${arrow} ${esc(t.label)}</b><span>${delta}</span>`;
+    drawMove(d);
     $('blurb').textContent = d.status.blurb;
     $('parts').innerHTML = d.ingredients.map((i) => i.score == null
       ? `<div class="ing"><span><b>${esc(i.name)}</b></span><span class="pts">no signal</span><span class="d">${esc(i.what)}. Its share goes to the others.</span></div>`
@@ -603,7 +727,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     $('card').innerHTML = d.fightCard.map((m, i) => {
       const rung = d.scales.rungs[m.rung - 1], [stakes, sc] = STAKES[m.stakes] || STAKES.regional;
       const move = m.move === 'up' ? ' · <span class="up">heating up right now</span>' : m.move === 'down' ? ' · <span class="down">quieter right now</span>' : '';
-      return `<div class="bout"><div class="top"><span class="eyebrow">${slots[Math.min(i, 2)]}</span><span class="chips"><span class="chip" style="color:${RUNG_TONE[m.rung]}" title="${esc(rung.what)}">${esc(rung.name)}</span><span class="chip" style="color:${sc}">${stakes}</span></span></div>` +
+      return `<div class="bout"><div class="top"><span class="eyebrow">${slots[Math.min(i, 2)]}</span><span class="chips"><span class="chip" style="color:${RUNG_TONE[m.rung]}" title="${esc(rung.name + ': ' + rung.what)}">${esc(rung.name)}</span><span class="chip" style="color:${sc}" title="${esc(STAKES[m.stakes]?.[2] || '')}">${stakes}</span></span></div>` +
         `<div class="name">${esc(m.a)} <i>vs</i> ${esc(m.b)}</div>` +
         `<div class="split"><span class="k-talk" style="flex:${m.talk}"></span><span class="k-flex" style="flex:${m.flex}"></span><span class="k-hands" style="flex:${m.hands}"></span></div>` +
         `<div class="note">${n(m.talk)} talk · ${n(m.flex)} flexin' · ${n(m.hands)} hands (${m.handsPerHour} an hour)${move}</div></div>`;
@@ -625,7 +749,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     drawHistory(d);
     const lbl = (k) => (d.scales.statuses.find((s) => s.key === k) || {}).label || k;
     $('log').innerHTML = (d.log || []).slice().reverse().slice(0, 6).map((e) =>
-      `<div>${e.kind === 'con' ? `TheseHandsCon ${e.from} → ${e.to}` : `${esc(lbl(e.from))} → ${esc(lbl(e.to))}`} <span class="note">· ${ago(e.t)}</span></div>`).join('')
+      `<div>${e.kind === 'con' ? `TheseHandsCon ${e.from} → ${e.to}` : `${esc(lbl(e.from))} → ${esc(lbl(e.to))}`} <span class="note">· ${ago(e.t)}</span>${e.why ? `<div class="note">${esc(e.why)}</div>` : ''}</div>`).join('')
       || '<p class="note">No level changes logged yet. Changes to the status or TheseHandsCon show up here.</p>';
 
     drawWire(d);
@@ -668,6 +792,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     fillTicker($('xtick'), feed.posts.length
       ? feed.posts.map((p) => `<span><b style="color:var(--blue)">${esc(p.user.toUpperCase())}</b> ${link(p.url, esc(p.text))} <span class="note">${ago(p.time)}</span></span>`)
       : feed.channels.map((c) => `<span>${link('https://t.me/' + encodeURIComponent(c.name), '<b style="color:var(--blue)">' + esc(c.label) + '</b>')} <span class="note">tap to open</span></span>`), TICKER_SPEED.osint);
+    runSearch();
     freshness();
   }
 
@@ -691,6 +816,11 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     }
   }
 
+  $('picks').innerHTML = PICKS.map((p) => `<button type="button" data-q="${esc(p)}">${esc(p)}</button>`).join('');
+  $('picks').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; $('q').value = $('q').value.trim().toLowerCase() === b.dataset.q.toLowerCase() ? '' : b.dataset.q; runSearch(); });
+  let searchTimer;
+  $('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 150); });
+  try { const saved = localStorage.getItem('beef-q'); if (saved) $('q').value = saved; } catch { /* ignore */ }
   $('tab-hot').onclick = () => { wireAll = false; if (data) drawWire(data); };
   $('tab-all').onclick = () => { wireAll = true; if (data) drawWire(data); };
   $('map').addEventListener('pointermove', pickSpot);
