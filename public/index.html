@@ -179,6 +179,12 @@ p { margin: 0; }
 .hits h3 { margin-bottom: 4px; }
 .hits ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .hits li { font-size: 13px; }
+.results { list-style: none; margin: 0; padding: 0; display: grid; }
+.results li { display: grid; gap: 3px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.results .meta { color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+.kind { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding: 1px 6px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.tabs.tabs-wrap { flex-wrap: wrap; }
+.search .btn { padding: 9px 14px; }
 mark { background: color-mix(in srgb, var(--yellow) 35%, transparent); color: inherit; padding: 0 1px; }
 
 /* what moved it */
@@ -229,11 +235,13 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   <div class="ticker" aria-label="Posts from OSINT channels on Telegram"><span class="tag" style="color:var(--blue)">OSINT</span><div class="lane"><div class="run" id="xtick"></div></div></div>
   <div class="alert" id="alert" hidden></div>
 
-  <section class="panel" aria-label="Search">
-    <div class="search">
-      <input id="q" type="search" placeholder="Search everything on the page: a country, a place, a word…" autocomplete="off" aria-label="Keyword search">
-      <div class="picks" id="picks"></div>
-    </div>
+  <section class="panel" aria-label="Search the news">
+    <header><h2>Search the Intel</h2><span class="note">Every report and OSINT post from the last 48 hours, plus a live worldwide news search</span></header>
+    <form class="search" id="qform" role="search">
+      <input id="q" type="search" placeholder="Type a word or words: Venezuela, drone strike, Hormuz…" autocomplete="off" aria-label="Keyword search">
+      <button class="btn" type="submit">Search</button>
+    </form>
+    <div class="picks" id="picks"></div>
     <div class="hits" id="hits" hidden></div>
   </section>
 
@@ -607,39 +615,105 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     $('move').innerHTML = `<h3>What moved it</h3><div>${esc(mv.text)}</div>` + (bars ? `<div class="bars">${bars}</div><span class="note">Bars: index points each ingredient's change is worth. Red pushed it up, green pulled it down.</span>` : '');
   }
 
-  // ---- keyword search over everything the page holds
-  const PICKS = ['Iran', 'Russia', 'Ukraine', 'China', 'Taiwan', 'Israel', 'Gaza', 'North Korea', 'nuclear', 'drone', 'missile', 'ceasefire'];
-  function searchIndex(d) {
+  // ---- keyword search: the 48-hour archive (search.json, loaded on first use) plus a live GDELT query
+  const PICKS = ['Iran', 'Russia', 'Ukraine', 'China', 'Taiwan', 'Israel', 'Gaza', 'Venezuela', 'North Korea', 'Houthi', 'nuclear', 'drone strike'];
+  const KINDS = {
+    news: ['News', 'Front pages of major outlets'], defense: ['Defense & regional', 'Defense press and regional papers'],
+    osint: ['OSINT channel', 'Public Telegram OSINT channels, unverified'], reddit: ['Reddit', 'User-posted, unverified'],
+    press: ['Wider press', 'Conflict headlines from thousands of sites, via GDELT'], live: ['Worldwide', 'Live GDELT search of world news'],
+  };
+  let archive = null, archiveTried = false, liveRows = [], liveFor = '', liveState = '', kindFilter = 'all', shown = 40, lastLive = 0, liveTimer;
+  const fromRow = (r) => ({ time: r[0], kind: r[1], source: r[2], title: r[3], url: r[4], tier: r[5], calm: !!r[6] });
+  async function loadArchive() {
+    if (archive || archiveTried) return;
+    archiveTried = true;
+    try {
+      const r = await fetch('search.json?' + (data ? data.generatedAt : Date.now()));
+      if (!r.ok) throw new Error(r.status);
+      archive = (await r.json()).rows.map(fromRow);
+    } catch {
+      archive = null; // snapshot or first run: fall back to what the page itself holds
+    }
+    runSearch();
+  }
+  function pageRows(d) {
     const rows = [];
-    const add = (group, text, url, meta) => text && rows.push({ group, text: String(text), url, meta: meta || '' });
-    for (const s of [...d.wire.stories, ...d.wire.quiet]) add('Headlines', s.title, s.url, `${s.n > 1 ? s.n + ' outlets' : s.source} · ${ago(s.time)}`);
-    for (const p of d.wire.press || []) add('Wider press', p.title, p.url, `${p.n} sites · ${ago(p.time)}`);
-    for (const p of (d.osint && d.osint.posts) || []) add('OSINT channels', p.text, p.url, `${p.user} · ${ago(p.time)}`);
-    for (const p of (d.reddit && d.reddit.posts) || []) add('Reddit', p.title, p.url, `r/${p.sub} · ${ago(p.time)}`);
-    for (const m of d.fightCard || []) add('Fight card', `${m.a} vs ${m.b}`, null, `${d.scales.rungs[m.rung - 1].name} · ${n(m.hands)} hands, ${n(m.talk)} talk, ${n(m.flex)} flexin'`);
-    for (const s of d.hotSpots || []) add('Hot spots', s.name, null, `${s.n} reports of force in 24h`);
-    for (const t of d.theaters || []) add('Regions', t.name + (t.top ? ` — ${t.top.title}` : ''), t.top && t.top.url, `heat ${t.heat}`);
-    for (const r of d.rundown || []) add('Rundown', r, null, '');
-    if (d.advisories) for (const c of d.advisories.doNotTravel) add('Do Not Travel list', c, null, 'US State Department Level 4');
+    for (const s of [...d.wire.stories, ...d.wire.quiet]) rows.push({ time: s.time, kind: 'news', source: s.n > 1 ? `${s.source} +${s.n - 1}` : s.source, title: s.title, url: s.url, tier: s.tier, calm: s.calm });
+    for (const p of d.wire.press || []) rows.push({ time: p.time, kind: 'press', source: `${p.n} sites`, title: p.title, url: p.url, tier: p.tier, calm: p.calm });
+    for (const p of (d.osint && d.osint.posts) || []) rows.push({ time: p.time, kind: 'osint', source: p.user, title: p.text, url: p.url, tier: 0 });
+    for (const p of (d.reddit && d.reddit.posts) || []) rows.push({ time: p.time, kind: 'reddit', source: `r/${p.sub}`, title: p.title, url: p.url, tier: p.tier, calm: p.calm });
     return rows;
   }
   const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const wordsOf = (q) => q.toLowerCase().replace(/["']/g, '').split(/\s+/).filter((w) => w.length >= 2);
+  // Every word must appear at the start of a word in the title or source: "iran" finds "Iranian", not "Tiranë".
+  const matcher = (words) => { const res = words.map((w) => new RegExp(`(^|[^a-z0-9])${escRe(w)}`, 'i')); return (t) => res.every((re) => re.test(t)); };
   function highlight(text, words) {
     let html = esc(text);
-    for (const w of words) html = html.replace(new RegExp(`(${escRe(esc(w))})`, 'gi'), '<mark>$1</mark>');
+    for (const w of words) html = html.replace(new RegExp(`(^|[^a-z0-9;])(${escRe(esc(w))})`, 'gi'), '$1<mark>$2</mark>');
     return html;
   }
+  async function runLive(q, retried = false) {
+    const words = wordsOf(q);
+    if (words.join(' ').length < 3 || q === liveFor) return;
+    const wait = lastLive + 5200 - Date.now(); // GDELT allows one request every five seconds
+    if (wait > 0) { clearTimeout(liveTimer); liveTimer = setTimeout(() => runLive(q), wait); return; }
+    lastLive = Date.now(); liveFor = q; liveState = 'loading'; liveRows = []; runSearch();
+    const query = words.map((w) => (/\s/.test(w) ? `"${w}"` : w)).join(' ') + ' sourcelang:english';
+    const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(query)}&mode=artlist&format=json&maxrecords=75&sort=hybridrel&timespan=3d`;
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      const text = await r.text();
+      if ($('q').value.trim() !== q) return; // the person has moved on
+      let j; try { j = JSON.parse(text); } catch { throw new Error(text.slice(0, 120) || `HTTP ${r.status}`); }
+      // GDELT matches anywhere in an article's text; keep only those whose headline or link names the search words.
+      const inTitle = matcher(words);
+      liveRows = (j.articles || []).filter((a) => /^https?:\/\//.test(a.url || '') && (inTitle(a.title || '') || inTitle(decodeURIComponent(a.url).replace(/[-_/]+/g, ' ')))).map((a) => {
+        const d = a.seendate || '';
+        return { time: Date.parse(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}T${d.slice(9, 11)}:${d.slice(11, 13)}:${d.slice(13, 15)}Z`) || Date.now(), kind: 'live', source: a.domain || 'GDELT', title: a.title || a.url, url: a.url, tier: 0 };
+      });
+      liveState = liveRows.length ? 'done' : 'empty';
+    } catch (err) {
+      const busy = /limit|5 seconds|failed to fetch|networkerror|load failed/i.test(err.message);
+      // GDELT's "slow down" reply carries no CORS header, so the browser reports it as a failed fetch. Retry once.
+      if (busy && !retried && $('q').value.trim() === q) { liveFor = ''; liveState = 'loading'; runSearch(); clearTimeout(liveTimer); liveTimer = setTimeout(() => { lastLive = 0; runLive(q, true); }, 6000); return; }
+      liveState = 'error:' + (busy ? 'Worldwide search (GDELT) is busy right now. Press Search again in a few seconds.' : err.name === 'TimeoutError' ? 'Worldwide search (GDELT) took too long. Press Search to try again.' : `Worldwide search (GDELT) did not answer: ${err.message}.`);
+      liveFor = '';
+    }
+    runSearch();
+  }
   function runSearch() {
-    const q = $('q').value.trim();
-    const box = $('hits');
-    if (!data || q.length < 2) { box.hidden = true; box.innerHTML = ''; return; }
-    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
-    const hits = searchIndex(data).filter((r) => { const t = (r.text + ' ' + r.meta).toLowerCase(); return words.every((w) => t.includes(w)); });
-    const groups = new Map();
-    for (const h of hits) { if (!groups.has(h.group)) groups.set(h.group, []); groups.get(h.group).push(h); }
+    const q = $('q').value.trim(), box = $('hits'), words = wordsOf(q);
+    if (!data || !words.length) { box.hidden = true; box.innerHTML = ''; return; }
+    if (!archive && !archiveTried) { loadArchive(); }
+    const match = matcher(words);
+    const pool = [...(archive || pageRows(data)), ...liveRows];
+    const seen = new Set();
+    const hits = pool.filter((r) => match(`${r.title} ${r.source}`) && !seen.has(r.url) && seen.add(r.url)).sort((a, b) => b.time - a.time);
+    const counts = {}; for (const h of hits) counts[h.kind] = (counts[h.kind] || 0) + 1;
+    const list = kindFilter === 'all' ? hits : hits.filter((h) => h.kind === kindFilter);
+    const sources = new Set(hits.map((h) => h.source)).size;
+    const tabs = ['all', ...Object.keys(KINDS)].filter((k) => k === 'all' || counts[k]).map((k) =>
+      `<button type="button" data-kind="${k}" aria-pressed="${k === kindFilter}" title="${esc(k === 'all' ? '' : KINDS[k][1])}">${k === 'all' ? 'All' : KINDS[k][0]} ${k === 'all' ? hits.length : counts[k]}</button>`).join('');
+    const live = liveState === 'loading' ? 'Searching worldwide news (GDELT)…'
+      : liveState.startsWith('error:') ? liveState.slice(6)
+      : liveState === 'empty' && liveFor === q ? 'No worldwide matches from GDELT in the last 3 days.'
+      : liveFor === q ? `Includes ${liveRows.length} live worldwide results from GDELT (last 3 days).`
+      : 'Press Search (or Enter) to add live worldwide results from GDELT.';
+    const pageHits = [
+      ...(data.fightCard || []).filter((m) => match(`${m.a} ${m.b}`)).map((m) => `Fight card: ${esc(m.a)} vs ${esc(m.b)} (${esc(data.scales.rungs[m.rung - 1].name)})`),
+      ...(data.hotSpots || []).filter((h) => match(h.name)).map((h) => `Hot spot: ${esc(h.name)} (${h.n} reports of force)`),
+    ];
     box.hidden = false;
-    box.innerHTML = `<p class="note">${hits.length} match${hits.length === 1 ? '' : 'es'} for "${esc(q)}"</p>` + [...groups].map(([g, list]) =>
-      `<div><h3>${esc(g)} · ${list.length}</h3><ul>${list.slice(0, 12).map((h) => `<li>${h.url ? link(h.url, highlight(h.text, words)) : highlight(h.text, words)}${h.meta ? ` <span class="note">· ${esc(h.meta)}</span>` : ''}</li>`).join('')}</ul></div>`).join('');
+    box.innerHTML =
+      `<p class="note">${hits.length} report${hits.length === 1 ? '' : 's'} from ${sources} source${sources === 1 ? '' : 's'} mention "${esc(q)}", newest first. ${archive ? 'Searching the last 48 hours.' : 'Searching what is on this page (the full archive is not available here).'} ${esc(live)}</p>` +
+      (tabs ? `<div class="tabs tabs-wrap" id="kindtabs">${tabs}</div>` : '') +
+      (list.length ? `<ul class="results">${list.slice(0, shown).map((h) => {
+        const chip = h.tier ? `<span class="chip" style="color:${h.calm ? 'var(--blue)' : TIER_TONE[h.tier]}">${esc(h.calm ? data.scales.calm : data.scales.beefTypes[h.tier].name)}</span>` : '';
+        return `<li><span class="chips"><span class="kind" title="${esc(KINDS[h.kind][1])}">${esc(KINDS[h.kind][0])}</span>${chip}</span><div>${link(h.url, highlight(h.title, words))}</div><div class="meta">${esc(h.source)} · ${ago(h.time)}</div></li>`;
+      }).join('')}</ul>` : `<p class="empty">Nothing in the last 48 hours mentions "${esc(q)}"${liveState === 'loading' ? '. Still checking worldwide news…' : '.'}</p>`) +
+      (list.length > shown ? `<button class="more btn" type="button" id="moreres">Show ${Math.min(40, list.length - shown)} more of ${list.length}</button>` : '') +
+      (pageHits.length ? `<p class="note">On the dashboard: ${pageHits.join(' · ')}</p>` : '');
     try { localStorage.setItem('beef-q', q); } catch { /* per-viewer convenience only */ }
   }
 
@@ -817,9 +891,17 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   }
 
   $('picks').innerHTML = PICKS.map((p) => `<button type="button" data-q="${esc(p)}">${esc(p)}</button>`).join('');
-  $('picks').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; $('q').value = $('q').value.trim().toLowerCase() === b.dataset.q.toLowerCase() ? '' : b.dataset.q; runSearch(); });
+  const newQuery = () => { kindFilter = 'all'; shown = 40; };
+  $('picks').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; $('q').value = b.dataset.q; newQuery(); runSearch(); runLive(b.dataset.q); });
   let searchTimer;
-  $('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 150); });
+  $('q').addEventListener('input', () => { newQuery(); clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 150); });
+  $('q').addEventListener('focus', loadArchive, { once: true });
+  $('qform').addEventListener('submit', (e) => { e.preventDefault(); newQuery(); runSearch(); runLive($('q').value.trim()); });
+  $('hits').addEventListener('click', (e) => {
+    const tab = e.target.closest('[data-kind]');
+    if (tab) { kindFilter = tab.dataset.kind; shown = 40; runSearch(); return; }
+    if (e.target.id === 'moreres') { shown += 40; runSearch(); }
+  });
   try { const saved = localStorage.getItem('beef-q'); if (saved) $('q').value = saved; } catch { /* ignore */ }
   $('tab-hot').onclick = () => { wireAll = false; if (data) drawWire(data); };
   $('tab-all').onclick = () => { wireAll = true; if (data) drawWire(data); };

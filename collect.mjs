@@ -19,6 +19,8 @@ import { theaterOfText, countryName, usFoeWeight, US_PEERS } from './lib/geo.mjs
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const DATA_FILE = path.join(ROOT, 'public', 'data.json');
 export const STATE_FILE = path.join(ROOT, 'public', 'state.json');
+export const SEARCH_FILE = path.join(ROOT, 'public', 'search.json');
+const SEARCH_HOURS = 48;
 
 // The Bulletin of the Atomic Scientists sets this once a year, in late January. Update it by hand then.
 const DOOMSDAY_OFFICIAL = { seconds: 85, setOn: '2026-01-27', source: 'Bulletin of the Atomic Scientists' };
@@ -336,14 +338,33 @@ export async function collect(now = Date.now()) {
     reddit: redditFresh ? { t: now, posts: redditFresh } : state.reddit,
     last: index == null ? state.last : { t: now, x: smoothed, status: status.key, con: handsCon?.level },
   };
-  return { data, state: next };
+  // ---- keyword-search archive: everything the sources returned in the last 48 hours.
+  // Row: [time, kind, source, title, url, tier, calm]. kind: news | defense | osint | reddit | press.
+  const row = (time, kind, source, title, url, tier, calm) => [time, kind, source, title, url, tier || 0, calm ? 1 : 0];
+  const fresh = [
+    ...items.map((it) => row(it.time, it.kind === 'front' ? 'news' : 'defense', it.source, it.title, it.url, it.tier, it.calm)),
+    ...(tgFeed ? tgFeed.all : []).map((p) => row(p.time, 'osint', p.user, p.text, p.url, classify(p.text).tier, classify(p.text).calm)),
+    ...(redditFresh || []).map((p) => row(p.time, 'reddit', `r/${p.sub}`, p.title, p.url, p.tier, p.calm)),
+  ];
+  const seenUrl = new Set();
+  const archive = [...fresh, ...(state.archive || [])]
+    .filter((r) => r[0] > now - SEARCH_HOURS * HOUR && r[0] < now + HOUR && !seenUrl.has(r[4]) && seenUrl.add(r[4]))
+    .slice(0, 6000);
+  next.archive = archive;
+  // GDELT headlines (rebuilt from the 24h event store each run, so not kept in the archive)
+  const wider = gdeltOk ? day.find.filter((f) => !seenUrl.has(f.url) && seenUrl.add(f.url))
+    .map((f) => row(f.time, 'press', f.source, prettySlug(f.title), f.url, f.tier, f.calm)) : [];
+  const search = { generatedAt: now, hours: SEARCH_HOURS, rows: [...archive, ...wider].sort((a, b) => b[0] - a[0]).slice(0, 15000) };
+
+  return { data, state: next, search };
 }
 
 export async function collectAndWrite() {
-  const { data, state } = await collect();
+  const { data, state, search } = await collect();
   await mkdir(path.dirname(DATA_FILE), { recursive: true });
   await writeFile(DATA_FILE, JSON.stringify(data));
   await writeFile(STATE_FILE, JSON.stringify(state));
+  await writeFile(SEARCH_FILE, JSON.stringify(search));
   return data;
 }
 

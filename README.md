@@ -20,7 +20,7 @@ No dependencies, no API keys, no accounts. Just Node.
 | **The Fight Card** | Country-vs-country matchups: how much is talk, how much is flexin', how much is hands |
 | **Doomsday Watch** | The official Doomsday Clock, a live Beef Clock, a nuclear-test check, and every clock setting since 1947 |
 | **Trend & Beef Log** | The index over the last 7 days and every change of status or level |
-| **Search** | Type a word (a country, a place, "drone") to find it across headlines, OSINT posts, Reddit, the fight card, hot spots and regions |
+| **Search the Intel** | Type a word or words to get every report that mentions them: the last 48 hours from all the news feeds, defense press, OSINT channels, Reddit and conflict headlines from thousands of sites, newest first and filterable by kind. Press Search to add live worldwide results from GDELT's news search (last 3 days) |
 | **What moved it** | Under the gauge: how much the index moved and which ingredients pushed it, with the stories and matchups behind the move |
 | **The Wire** | Headlines grouped into stories, each tagged with a beef type and how many outlets carry it |
 | **OSINT scroller** | Latest English posts from public OSINT channels on Telegram, or links to them when none come through. Shown, never scored |
@@ -241,7 +241,7 @@ test/                  tests for the classifier, GDELT handling, scoring and fee
 .github/workflows/     GitHub Pages publishing, plus a check that tests and takes a dry reading on branches
 ```
 
-`public/data.json`, `public/state.json` and `snapshot.html` are generated and not committed.
+`public/data.json`, `public/state.json`, `public/search.json` (the 48-hour search archive) and `snapshot.html` are generated and not committed.
 
 ## Troubleshooting
 
