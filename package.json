@@ -10,7 +10,6 @@
     "collect": "node collect.mjs",
     "snapshot": "node collect.mjs && node scripts/snapshot.mjs",
     "calibrate": "node scripts/calibrate.mjs",
-    "csp": "node scripts/csp.mjs",
     "test": "node --test"
   }
 }

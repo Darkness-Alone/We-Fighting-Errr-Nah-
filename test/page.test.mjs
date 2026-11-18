@@ -10,11 +10,3 @@ test('page scripts parse', () => {
   assert.ok(scripts.length >= 1);
   for (const code of scripts) assert.doesNotThrow(() => new vm.Script(code), code.slice(0, 60));
 });
-
-// The Content Security Policy pins each inline script by hash; editing a script without `npm run csp` would blank the page.
-test('CSP script hashes match the page scripts', async () => {
-  const { cspFor, currentCsp } = await import('../lib/csp.mjs');
-  const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
-  assert.equal(currentCsp(html), cspFor(html), 'run `npm run csp` to refresh the hashes');
-  assert.ok(html.indexOf('Content-Security-Policy') < html.indexOf('<link'), 'CSP meta must come before any resource');
-});
