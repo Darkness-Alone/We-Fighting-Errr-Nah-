@@ -234,17 +234,28 @@ lib/gdelt.mjs          downloads GDELT event files and boils them down
 lib/classify.mjs       reads a headline: beef type, calm or not, nuclear or not; groups stories
 lib/geo.mjs            countries, regions, how much each matchup matters
 lib/score.mjs          every scale and scoring rule (pure functions)
+lib/csp.mjs            the page's Content Security Policy (script hashes)
 public/index.html      the whole dashboard in one file
 scripts/calibrate.mjs  back-tests the scoring on archived GDELT days
 scripts/snapshot.mjs   bakes a reading into a standalone HTML file
+scripts/csp.mjs        refreshes the CSP hashes after a script edit (npm run csp)
 test/                  tests for the classifier, GDELT handling, scoring and feed parsers
 .github/workflows/     GitHub Pages publishing, plus a check that tests and takes a dry reading on branches
 ```
 
 `public/data.json`, `public/state.json`, `public/search.json` (the 48-hour search archive) and `snapshot.html` are generated and not committed.
 
+## Security
+
+The page loads no third-party JavaScript: no analytics, no A/B testing (such as Optimizely), no ad or tag scripts, and no npm packages. Its only outside file is the Google Fonts stylesheet. A Content Security Policy in `public/index.html` lets the browser run only the page's own inline scripts, each pinned by SHA-256 hash, and fetch data only from the site itself and GDELT. Any other script added to the page is blocked. Headlines and posts from feeds are shown as text, never run.
+
+If you edit a `<script>` in `index.html`, run `npm run csp` to refresh the hashes. `npm test` fails until you do, so a stale hash can't blank the live page. If one ever slips through, the status line says "the security policy blocked this page's own script".
+
 ## Troubleshooting
 
+- **Stuck on "Checking who's beefin…"**: the page code didn't start. The status line shows
+  "Page error: …" with the browser's message and line number when it can; if JavaScript is off for
+  the site, a note under the status line says so.
 - **"No reading yet"**: the page loaded before the first reading finished. Wait a few seconds and
   reload, or run `npm run collect`.
 - **"Stale"**: the reading is more than 45 minutes old. Locally, check the server is running. On
