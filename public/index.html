@@ -231,6 +231,25 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   .dot, .ping { animation: none; } .ping { display: none; } .needle { transition: none; }
 }
 </style>
+<script>
+// If the page code can't start (an error, a blocked script), say so on the page instead of hanging on
+// "Checking who's beefin…". Plain old JavaScript on purpose, so it runs even where the main script can't.
+(function () {
+  var START = 'Checking who';
+  function show(text) {
+    var el = document.getElementById('fresh'), dot = document.getElementById('dot');
+    if (!el || (el.textContent.indexOf(START) !== 0 && el.textContent.indexOf('Page error') !== 0)) return;
+    el.textContent = 'Page error: ' + text;
+    if (dot) dot.className = 'dot stale';
+  }
+  window.addEventListener('error', function (e) {
+    show(((e && e.message) || 'a script did not load') + (e && e.lineno ? ' (line ' + e.lineno + ')' : ''));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    show(String((e && e.reason && (e.reason.message || e.reason)) || 'unknown'));
+  });
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -238,6 +257,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     <strong>WE FIGHTING ERRR NAH?</strong>
     <span id="utc">--:--:-- Zulu</span>
     <span class="live"><span class="dot" id="dot"></span><span id="fresh">Checking who's beefin…</span></span>
+    <noscript><span class="note" style="color:var(--orange)">JavaScript is turned off for this site, so no reading can load. Turn it on in your browser's site settings.</span></noscript>
   </div>
 
   <div class="ticker" aria-label="Headline ticker"><span class="tag">WIRE</span><div class="lane"><div class="run" id="tick"></div></div></div>

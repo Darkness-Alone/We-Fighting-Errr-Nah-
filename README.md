@@ -245,6 +245,9 @@ test/                  tests for the classifier, GDELT handling, scoring and fee
 
 ## Troubleshooting
 
+- **Stuck on "Checking who's beefin…"**: the page code didn't start. The status line shows
+  "Page error: …" with the browser's message and line number when it can; if JavaScript is off for
+  the site, a note under the status line says so.
 - **"No reading yet"**: the page loaded before the first reading finished. Wait a few seconds and
   reload, or run `npm run collect`.
 - **"Stale"**: the reading is more than 45 minutes old. Locally, check the server is running. On
