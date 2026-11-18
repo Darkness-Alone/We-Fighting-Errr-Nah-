@@ -16,7 +16,7 @@ No dependencies, no API keys, no accounts. Just Node.
 | **We Beefin Index** | A 0–100 gauge, its status, the trend, a ghost needle for 24 hours ago, and what went into the number |
 | **TheseHandsCon** | An estimate of US military readiness on a DEFCON-style scale, 5 (normal) to 1 (nuclear war), with the reasons for it |
 | **The Rundown** | The whole picture in four or five sentences, with a copy button |
-| **Where It's Poppin** | A world map of places named in reports of force, plus heat by region |
+| **Where It's Poppin** | A world map of places named in reports of force, plus heat by region. Zoom in (scroll, pinch, double-click or +) and drag to pull apart close dots; zoomed in, each dot is labelled and the place list flies you to a spot |
 | **The Fight Card** | Country-vs-country matchups: how much is talk, how much is flexin', how much is hands |
 | **Doomsday Watch** | The official Doomsday Clock, a live Beef Clock, a nuclear-test check, and every clock setting since 1947 |
 | **Trend & Beef Log** | The index over the last 7 days and every change of status or level |
