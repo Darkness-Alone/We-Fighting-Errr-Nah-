@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tg7QpoXWt2Xsy91vIuBgpEAOM1JwNOlGP1Rk7+vB4mc=' 'sha256-uQgLBNUB9jPO5ZK90mToMzSvi1Pj8m0MOslDK0peguU=' 'sha256-ZeS7C5YvFxuGfMlskYOGy9CsBafgPc5R3oJYHchZwho='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.gdeltproject.org; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>We Beefin Index</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -244,6 +245,10 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   }
   window.addEventListener('error', function (e) {
     show(((e && e.message) || 'a script did not load') + (e && e.lineno ? ' (line ' + e.lineno + ')' : ''));
+  });
+  document.addEventListener('securitypolicyviolation', function (e) {
+    if (e.effectiveDirective && e.effectiveDirective.indexOf('script-src') === 0)
+      show('the security policy blocked this page\'s own script (line ' + e.lineNumber + '). Run npm run csp and redeploy.');
   });
   window.addEventListener('unhandledrejection', function (e) {
     show(String((e && e.reason && (e.reason.message || e.reason)) || 'unknown'));
