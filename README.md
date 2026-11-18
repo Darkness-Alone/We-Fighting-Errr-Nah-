@@ -236,6 +236,7 @@ lib/geo.mjs            countries, regions, how much each matchup matters
 lib/score.mjs          every scale and scoring rule (pure functions)
 lib/csp.mjs            the page's Content Security Policy (script hashes)
 public/index.html      the whole dashboard in one file
+public/count.js        GoatCounter's visitor-count script, served from the site
 scripts/calibrate.mjs  back-tests the scoring on archived GDELT days
 scripts/snapshot.mjs   bakes a reading into a standalone HTML file
 scripts/csp.mjs        refreshes the CSP hashes after a script edit (npm run csp)
@@ -245,9 +246,18 @@ test/                  tests for the classifier, GDELT handling, scoring and fee
 
 `public/data.json`, `public/state.json`, `public/search.json` (the 48-hour search archive) and `snapshot.html` are generated and not committed.
 
+## Visitor stats
+
+The live page counts visits with [GoatCounter](https://www.goatcounter.com): visitors per day, countries, referring sites, and screen sizes. It uses no cookies and keeps no IP addresses. Only the account owner can see the dashboard at `https://weinthisthang.goatcounter.com`.
+
+- **Skip your own visits:** open the live page once with `#toggle-goatcounter` on the end of the address. That browser stops counting until you do it again.
+- **Change the account:** edit the `data-goatcounter` address near the end of `public/index.html`, then run `npm run csp`. The security policy follows that address.
+- **Turn it off:** delete that `<script>` tag and run `npm run csp`.
+- Local copies (`npm start`, snapshots) are never counted.
+
 ## Security
 
-The page loads no third-party JavaScript: no analytics, no A/B testing (such as Optimizely), no ad or tag scripts, and no npm packages. Its only outside file is the Google Fonts stylesheet. A Content Security Policy in `public/index.html` lets the browser run only the page's own inline scripts, each pinned by SHA-256 hash, and fetch data only from the site itself and GDELT. Any other script added to the page is blocked. Headlines and posts from feeds are shown as text, never run.
+The page loads no third-party JavaScript: no A/B testing (such as Optimizely), no ad or tag scripts, and no npm packages. Its only outside file is the Google Fonts stylesheet. The visitor counter's script (`public/count.js`) is GoatCounter's own code, copied into this repo and served from the site, so no remote script ever runs. A Content Security Policy in `public/index.html` lets the browser run only the page's own inline scripts (each pinned by SHA-256 hash) and script files from the site itself. Data can be fetched only from the site, GDELT, and the GoatCounter address. Any other script added to the page is blocked. Headlines and posts from feeds are shown as text, never run.
 
 If you edit a `<script>` in `index.html`, run `npm run csp` to refresh the hashes. `npm test` fails until you do, so a stale hash can't blank the live page. If one ever slips through, the status line says "the security policy blocked this page's own script".
 

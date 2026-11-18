@@ -15,7 +15,9 @@ const out = args.find((a) => !a.startsWith('--')) || path.join(root, 'snapshot.h
 const data = JSON.parse(await readFile(path.join(root, 'public', 'data.json'), 'utf8'));
 let html = await readFile(path.join(root, 'public', 'index.html'), 'utf8');
 const json = JSON.stringify(data).replace(/</g, '\\u003c');
-html = withCsp(html.replace('/*SNAPSHOT*/', () => `window.__SNAPSHOT__=${json};`)); // baked data changes the script hash
+html = html.replace('/*SNAPSHOT*/', () => `window.__SNAPSHOT__=${json};`); // baked data changes the script hash
+// A snapshot is a standalone file: no visitor counter (count.js isn't next to it, and a local file shouldn't count).
+html = withCsp(html.replace(/<!-- Visitor counter[\s\S]*?<\/script>\n/, ''));
 if (fragment) {
   // Body-only form for hosts that supply their own document skeleton.
   html = html

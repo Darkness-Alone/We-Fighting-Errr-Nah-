@@ -18,3 +18,14 @@ test('CSP script hashes match the page scripts', async () => {
   assert.equal(currentCsp(html), cspFor(html), 'run `npm run csp` to refresh the hashes');
   assert.ok(html.indexOf('Content-Security-Policy') < html.indexOf('<link'), 'CSP meta must come before any resource');
 });
+
+// The visitor counter is GoatCounter's script served from this site, never a remote script tag.
+test('visitor counter is self-hosted and allowed only to its own GoatCounter address', async () => {
+  const { counterOrigin, cspFor } = await import('../lib/csp.mjs');
+  const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
+  assert.ok(readFileSync(new URL('../public/count.js', import.meta.url), 'utf8').includes('GoatCounter'));
+  assert.doesNotMatch(html, /<script\b[^>]*\ssrc="(https?:)?\/\//, 'no remote script files');
+  const origin = counterOrigin(html);
+  assert.match(origin, /^https:\/\/[a-z0-9-]+\.goatcounter\.com$/);
+  assert.match(cspFor(html), new RegExp(`connect-src [^;]*${origin.replace(/\./g, '\\.')}`));
+});
