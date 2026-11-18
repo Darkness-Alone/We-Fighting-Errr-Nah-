@@ -5,6 +5,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { withCsp } from '../lib/csp.mjs';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -14,7 +15,7 @@ const out = args.find((a) => !a.startsWith('--')) || path.join(root, 'snapshot.h
 const data = JSON.parse(await readFile(path.join(root, 'public', 'data.json'), 'utf8'));
 let html = await readFile(path.join(root, 'public', 'index.html'), 'utf8');
 const json = JSON.stringify(data).replace(/</g, '\\u003c');
-html = html.replace('/*SNAPSHOT*/', () => `window.__SNAPSHOT__=${json};`);
+html = withCsp(html.replace('/*SNAPSHOT*/', () => `window.__SNAPSHOT__=${json};`)); // baked data changes the script hash
 if (fragment) {
   // Body-only form for hosts that supply their own document skeleton.
   html = html
