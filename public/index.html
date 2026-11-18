@@ -114,8 +114,17 @@ p { margin: 0; }
 .btn:hover { border-color: var(--blue); }
 
 /* map */
-.mapwrap { position: relative; }
-.mapwrap canvas { width: 100%; display: block; cursor: crosshair; }
+.mapwrap { position: relative; overflow: hidden; }
+.mapwrap canvas { width: 100%; display: block; cursor: crosshair; touch-action: pan-y; }
+.mapwrap.zoomed canvas { cursor: grab; touch-action: none; }
+.mapwrap.dragging canvas { cursor: grabbing; }
+.zoombar { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; z-index: 2; }
+.zoombar button { min-width: 30px; height: 30px; padding: 0 8px; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); font: 700 15px/1 var(--mono); cursor: pointer; opacity: .92; }
+.zoombar button:hover { border-color: var(--blue); }
+.zoombar button:disabled { opacity: .35; cursor: default; }
+.zoombar .lvl { min-width: 0; font-size: 11px; font-weight: 400; color: var(--muted); cursor: default; border-color: transparent; background: none; }
+.spots button { background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.spots button:hover, .spots button.on { color: var(--blue); }
 .ping { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; border: 1px solid var(--red); animation: ping 2.4s ease-out infinite; pointer-events: none; }
 @keyframes ping { from { transform: scale(1); opacity: .9; } to { transform: scale(4.5); opacity: 0; } }
 .spots { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; }
@@ -278,8 +287,9 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   <div class="grid even">
     <section class="panel">
       <header><h2>Where It's Poppin</h2><span class="note">Places named in reports of force, last 24h</span></header>
-      <div class="mapwrap" id="mapwrap"><canvas id="map" role="img" aria-label="World map of places where force is being reported"></canvas></div>
-      <p class="note" id="mapcap">Tap a dot to see the place.</p>
+      <div class="mapwrap" id="mapwrap"><canvas id="map" role="img" aria-label="World map of places where force is being reported"></canvas>
+        <div class="zoombar"><span class="lvl" id="zlvl"></span><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">&minus;</button><button type="button" id="zreset" aria-label="Show the whole world">World</button></div></div>
+      <p class="note" id="mapcap">Tap a dot to see the place. Scroll, pinch or press + to zoom in; drag to move around. Tap a place below to fly to it.</p>
       <ol class="spots" id="spots"></ol>
       <h3>Heat by region</h3>
       <div class="stack" id="theaters"></div>
@@ -487,49 +497,110 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   const MASK = 'AAAAAD/////AAAAwAAYAAAAAAAAAAR/f//8ABwAAAAOAAAAAAAAA4d+P//8AAgAAgAf4AcAAAAADgKKAf/8AAAACAP/+IAAAAOADfO/wP/4AADAEG/////8Aef8/P/P77////PiQn////gAAHgAAAAPl4H//+ENAAAAAAAAAAf////pcHwHAH//////////+A////+BwDgAAPv/////////8AeD//+B+AAAAPj///////+SAAYAf//h/AAACFP///////gOAAAAP//7/gAAPP////////4MAAAAH////wAAL/////////8AAAAAD///84AAD/////////0AAAAAD////AAAB///3/////gAAAAAD///4AAAH++Dv/////MAAAAAD///wAAAPlu/3////8IAAAAAB///AAAAPAP/3///+IIAAAAAB///AAAAG+B//////s4AAAAAA//+AAAAH8AP/////DgAAAAAAf/8AAAAP/v//////gAAAAAAAP8EAAAAP///v////gAAAAAAAD4EAAAA///3x////AAAAAAAAB4AAAAA///3+H//+gAAAAAAAA4jAAAB///7/D+f4AAAAAAAAA/gQAAB///7+B8fggAAAAAAAAPwAAAB///94B4PggAAAAAAAAB4AAAB////gAwHwAAAAAAAAAAYwAAA///+4AwFgAAAAAAAAAAH/AAAf///wAIAAYAAAAAAAAAB/wAAP///wAACCAAAAAAAAAAB/8AAAD//gAAHGAAAAAAAAAAD/8AAAD//AAAGOwAAAAAAAAAD//AAAH/+AAADOBAAAAAAAAAD//4AAD/8AAABkl8gAAAAAAAD//8AAB/8AAAA4AeIAAAAAAAD//8AAB/8AAAAMAIAAAAAAAAB//4AAB/8AAAAAAAAAAAAAAAB//4AAB/8QAAAADsAAAAAAAAA//4AAD/8wAAAAfsAAAAAAAAAP/wAAB/wwAAAAf+AAAAAAAAAP/wAAB/xgAAAD//AAAAAAAAAP/AAAA/xgAAAH//gAAAAAAAAf+AAAA/gAAAAH//gAAAAAAAAf8AAAA/gAAAAD//wAAAAAAAAf8AAAAfAAAAAD//gAAAAAAAAf4AAAAeAAAAADg/gAAAAAAAAfgAAAAAAAAAAAAPAAAAAAAAA/gAAAAAAAAAAAAGACAAAAAAA+AAAAAAAAAAAAACAAAAAAAAA8AAAAAAAAAAAAAAAYAAAAAAA4AAAAAAAAAAAAAAAQAAAAAAA4AAAAAAAAAAAAAAAAAAAAAAA4gAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
   const COLS = 144, ROWS = 56, TOP = 82.5, SPAN = 140;
   const LAND = (() => { const b = atob(MASK), out = new Uint8Array(COLS * ROWS); for (let i = 0; i < out.length; i++) out[i] = (b.charCodeAt(i >> 3) >> (7 - (i & 7))) & 1; return out; })();
+  // view: world coords are CSS px of the unzoomed map; screen = (world - origin) * k
+  const view = { k: 1, x: 0, y: 0 }, ZMAX = 8;
+  let mapW = 0, mapH = 0, picked = null, mapFrame = 0;
+  const spotXY = (s) => [((s.lon + 180) / 360) * mapW, ((TOP - Math.max(-57.5, Math.min(TOP, s.lat))) / SPAN) * mapH];
+  function clampView() {
+    view.k = Math.max(1, Math.min(ZMAX, view.k));
+    view.x = Math.max(0, Math.min(mapW - mapW / view.k, view.x));
+    view.y = Math.max(0, Math.min(mapH - mapH / view.k, view.y));
+  }
+  // zoom to scale k keeping screen point (sx, sy) fixed
+  function zoomAt(k, sx, sy) {
+    const wx = view.x + sx / view.k, wy = view.y + sy / view.k;
+    view.k = Math.max(1, Math.min(ZMAX, k));
+    view.x = wx - sx / view.k; view.y = wy - sy / view.k;
+    clampView(); queueMap();
+  }
+  function flyTo(s, k) {
+    const [wx, wy] = spotXY(s);
+    view.k = Math.max(view.k, k); view.x = wx - mapW / view.k / 2; view.y = wy - mapH / view.k / 2;
+    clampView(); picked = s; showSpot(s); queueMap();
+  }
+  const queueMap = () => { if (!mapFrame) mapFrame = requestAnimationFrame(() => { mapFrame = 0; drawMap(); }); };
   function drawMap() {
     const d = data, cv = $('map'), wrap = $('mapwrap');
     const w = wrap.clientWidth, h = Math.round((w * ROWS) / COLS), dpr = window.devicePixelRatio || 1;
-    if (!w) return;
-    cv.width = w * dpr; cv.height = h * dpr; cv.style.height = h + 'px';
+    if (!w || !d) return;
+    if (mapW && w !== mapW) { const f = w / mapW; view.x *= f; view.y *= f; }
+    mapW = w; mapH = h; clampView();
+    const { k, x: ox, y: oy } = view;
+    if (cv.width !== w * dpr || cv.height !== h * dpr) { cv.width = w * dpr; cv.height = h * dpr; cv.style.height = h + 'px'; }
     const g = cv.getContext('2d');
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, h);
-    const cell = w / COLS, r = Math.max(0.6, cell * 0.28);
+    const cell = w / COLS, r = Math.max(0.6, cell * 0.28) * (1 + (k - 1) * 0.35), sc = (wx, wy) => [(wx - ox) * k, (wy - oy) * k];
     g.fillStyle = css('--dot');
     for (let i = 0; i < LAND.length; i++) {
       if (!LAND[i]) continue;
-      g.beginPath();
-      g.arc(((i % COLS) + 0.5) * cell, (Math.floor(i / COLS) + 0.5) * cell, r, 0, 6.2832);
-      g.fill();
+      const [x, y] = sc(((i % COLS) + 0.5) * cell, (Math.floor(i / COLS) + 0.5) * cell);
+      if (x < -r || y < -r || x > w + r || y > h + r) continue;
+      g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
     }
-    const spots = d.hotSpots || [], max = Math.max(1, ...spots.map((s) => s.n)), scale = Math.max(0.7, w / 560);
+    // when zoomed in, faint lat/lon lines every 10 degrees help place the dots
+    if (k >= 2) {
+      g.strokeStyle = css('--line'); g.lineWidth = 1; g.beginPath();
+      for (let lon = -180; lon <= 180; lon += 10) { const [x] = sc(((lon + 180) / 360) * w, 0); if (x >= 0 && x <= w) { g.moveTo(x, 0); g.lineTo(x, h); } }
+      for (let lat = -50; lat <= 80; lat += 10) { const [, y] = sc(0, ((TOP - lat) / SPAN) * h); if (y >= 0 && y <= h) { g.moveTo(0, y); g.lineTo(w, y); } }
+      g.stroke();
+    }
+    const spots = d.hotSpots || [], max = Math.max(1, ...spots.map((s) => s.n));
+    const scale = Math.max(0.7, w / 560) * Math.pow(k, 0.3), tones = { red: css('--red'), orange: css('--orange'), yellow: css('--yellow') };
     spotsXY = [];
-    wrap.querySelectorAll('.ping').forEach((el) => el.remove());
     [...spots].sort((a, b) => a.n - b.n).forEach((s) => {
-      const x = ((s.lon + 180) / 360) * w, y = ((TOP - Math.max(-57.5, Math.min(TOP, s.lat))) / SPAN) * h;
+      const [x, y] = sc(...spotXY(s));
       const rel = s.n / max, rad = (2.5 + 9 * Math.sqrt(rel)) * scale;
-      const color = css(rel >= 0.55 ? '--red' : rel >= 0.2 ? '--orange' : '--yellow');
-      g.globalAlpha = 0.22; g.fillStyle = color; g.beginPath(); g.arc(x, y, rad * 1.9, 0, 6.2832); g.fill();
+      if (x < -rad * 2 || y < -rad * 2 || x > w + rad * 2 || y > h + rad * 2) return;
+      g.fillStyle = tones[rel >= 0.55 ? 'red' : rel >= 0.2 ? 'orange' : 'yellow'];
+      g.globalAlpha = k > 1 ? 0.16 : 0.22; g.beginPath(); g.arc(x, y, rad * (k > 1 ? 1.5 : 1.9), 0, 6.2832); g.fill();
       g.globalAlpha = 0.9; g.beginPath(); g.arc(x, y, Math.max(1.6, rad * 0.55), 0, 6.2832); g.fill();
       g.globalAlpha = 1;
-      spotsXY.push({ x, y, s });
+      spotsXY.push({ x, y, s, rad });
     });
+    // name the dots once there is room: biggest first, skipping labels that would overlap
+    if (k >= 2) {
+      g.font = '11px ' + css('--mono'); g.textBaseline = 'middle';
+      const zb = $('mapwrap').querySelector('.zoombar'), boxes = [[w - zb.offsetWidth - 12, 0, w, zb.offsetHeight + 10]];
+      [...spotsXY].sort((a, b) => b.s.n - a.s.n).forEach((p) => {
+        const label = `${p.s.name} ${p.s.n}`, tw = g.measureText(label).width, bx = p.x + Math.max(4, p.rad * 0.55) + 3, by = p.y - 7;
+        const box = [bx - 2, by, bx + tw + 2, by + 14];
+        if (box[2] > w || boxes.some((b) => !(box[0] > b[2] || box[2] < b[0] || box[1] > b[3] || box[3] < b[1]))) return;
+        boxes.push(box);
+        g.fillStyle = css('--bg'); g.globalAlpha = 0.7; g.fillRect(box[0], box[1], box[2] - box[0], box[3] - box[1]);
+        g.globalAlpha = 1; g.fillStyle = p.s === picked ? css('--blue') : css('--fg'); g.fillText(label, bx, p.y);
+      });
+    }
+    if (picked) {
+      const p = spotsXY.find((q) => q.s === picked);
+      if (p) { g.strokeStyle = css('--blue'); g.lineWidth = 1.5; g.beginPath(); g.arc(p.x, p.y, Math.max(7, p.rad * 0.55 + 4), 0, 6.2832); g.stroke(); }
+    }
+    wrap.querySelectorAll('.ping').forEach((el) => el.remove());
     spots.slice(0, 3).forEach((s, i) => {
+      const [x, y] = sc(...spotXY(s));
+      if (x < 0 || y < 0 || x > w || y > h) return;
       const el = document.createElement('span');
       el.className = 'ping';
-      el.style.left = (((s.lon + 180) / 360) * 100).toFixed(2) + '%';
-      el.style.top = (((TOP - s.lat) / SPAN) * 100).toFixed(2) + '%';
+      el.style.left = x.toFixed(1) + 'px';
+      el.style.top = y.toFixed(1) + 'px';
       el.style.animationDelay = i * 0.8 + 's';
       wrap.appendChild(el);
     });
+    wrap.classList.toggle('zoomed', k > 1.01);
+    $('zlvl').textContent = k > 1.01 ? k.toFixed(1) + '×' : '';
+    $('zin').disabled = k >= ZMAX - 0.01; $('zout').disabled = $('zreset').disabled = k <= 1.01;
+    document.querySelectorAll('#spots button').forEach((b) => b.classList.toggle('on', picked && b.dataset.name === picked.name));
   }
-  function pickSpot(ev) {
+  function showSpot(s) {
+    $('mapcap').textContent = s ? `${s.name}: ${s.n} report${s.n === 1 ? '' : 's'} of force in 24h${s.lat != null ? ` · ${Math.abs(s.lat).toFixed(1)}°${s.lat >= 0 ? 'N' : 'S'} ${Math.abs(s.lon).toFixed(1)}°${s.lon >= 0 ? 'E' : 'W'}` : ''}` : 'Tap a dot to see the place.';
+  }
+  function spotAt(ev) {
     const box = $('map').getBoundingClientRect(), x = ev.clientX - box.left, y = ev.clientY - box.top;
     let best = null, bd = 22 * 22;
     for (const p of spotsXY) { const dd = (p.x - x) ** 2 + (p.y - y) ** 2; if (dd < bd) { bd = dd; best = p.s; } }
-    $('mapcap').textContent = best ? `${best.name}: ${best.n} report${best.n === 1 ? '' : 's'} of force in 24h` : 'Tap a dot to see the place.';
+    return best;
   }
+  function pickSpot(ev) { const s = spotAt(ev); if (s || !picked) showSpot(s); }
 
   // ---- small charts
   function drawHistory(d) {
@@ -798,8 +869,9 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     } else $('alert').hidden = true;
 
     // map + regions
+    if (picked) picked = (d.hotSpots || []).find((s) => s.name === picked.name) || null;
     drawMap();
-    $('spots').innerHTML = (d.hotSpots || []).slice(0, 8).map((s) => `<li>${esc(s.name)} <b>${s.n}</b></li>`).join('') || '<li class="note">No event data on this reading.</li>';
+    $('spots').innerHTML = (d.hotSpots || []).slice(0, 8).map((s) => `<li><button type="button" data-name="${esc(s.name)}" title="Zoom to ${esc(s.name)}">${esc(s.name)} <b>${s.n}</b></button></li>`).join('') || '<li class="note">No event data on this reading.</li>';
     $('theaters').innerHTML = d.theaters.map((r) => {
       const sub = [r.hands && `${n(r.hands)} force reports`, r.stories && `${r.stories} stor${r.stories === 1 ? 'y' : 'ies'}`].filter(Boolean).join(' · ');
       return `<div class="heat"><span class="nm">${esc(r.name)}</span><span class="val">${r.heat}</span><div class="track"><div class="fill" style="width:${r.heat}%;background:${TONE[band(r.heat * 0.9)]}"></div></div>` +
@@ -915,8 +987,55 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   try { const saved = localStorage.getItem('beef-q'); if (saved) $('q').value = saved; } catch { /* ignore */ }
   $('tab-hot').onclick = () => { wireAll = false; if (data) drawWire(data); };
   $('tab-all').onclick = () => { wireAll = true; if (data) drawWire(data); };
-  $('map').addEventListener('pointermove', pickSpot);
-  $('map').addEventListener('click', pickSpot);
+  // map zoom + pan: wheel, pinch, drag, double-click, buttons
+  {
+    const cv = $('map'), pts = new Map();
+    let drag = null, moved = false;
+    const local = (ev) => { const b = cv.getBoundingClientRect(); return [ev.clientX - b.left, ev.clientY - b.top]; };
+    cv.addEventListener('wheel', (ev) => {
+      if (ev.deltaY > 0 && view.k <= 1.01) return; // let the page scroll when fully zoomed out
+      ev.preventDefault();
+      const [sx, sy] = local(ev);
+      zoomAt(view.k * Math.exp(-ev.deltaY * (ev.deltaMode ? 0.04 : 0.0012)), sx, sy);
+    }, { passive: false });
+    cv.addEventListener('pointerdown', (ev) => {
+      pts.set(ev.pointerId, local(ev)); moved = false;
+      if (pts.size === 2) { const [a, b] = [...pts.values()]; drag = { pinch: Math.hypot(a[0] - b[0], a[1] - b[1]), k: view.k }; }
+      else if (view.k > 1.01 || ev.pointerType === 'mouse') drag = { at: local(ev), x: view.x, y: view.y };
+      if (drag) cv.setPointerCapture(ev.pointerId);
+    });
+    cv.addEventListener('pointermove', (ev) => {
+      if (!pts.has(ev.pointerId)) { pickSpot(ev); return; }
+      pts.set(ev.pointerId, local(ev));
+      if (drag && drag.pinch && pts.size === 2) {
+        const [a, b] = [...pts.values()];
+        zoomAt(drag.k * (Math.hypot(a[0] - b[0], a[1] - b[1]) / drag.pinch), (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+        moved = true;
+      } else if (drag && drag.at && view.k > 1.01) {
+        const [sx, sy] = local(ev), dx = sx - drag.at[0], dy = sy - drag.at[1];
+        if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+        if (moved) { $('mapwrap').classList.add('dragging'); view.x = drag.x - dx / view.k; view.y = drag.y - dy / view.k; clampView(); queueMap(); }
+      } else pickSpot(ev);
+    });
+    const end = (ev) => {
+      pts.delete(ev.pointerId);
+      if (pts.size < 2 && drag && drag.pinch) drag = null;
+      if (!pts.size) { drag = null; $('mapwrap').classList.remove('dragging'); }
+    };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    cv.addEventListener('click', (ev) => {
+      if (moved) return;
+      const s = spotAt(ev); picked = s; showSpot(s); queueMap();
+    });
+    cv.addEventListener('dblclick', (ev) => { ev.preventDefault(); const [sx, sy] = local(ev); zoomAt(view.k * 2, sx, sy); });
+    const mid = (f) => zoomAt(view.k * f, mapW / 2, mapH / 2);
+    $('zin').onclick = () => mid(2); $('zout').onclick = () => mid(0.5);
+    $('zreset').onclick = () => { view.k = 1; view.x = view.y = 0; picked = null; showSpot(null); queueMap(); };
+    $('spots').addEventListener('click', (ev) => {
+      const b = ev.target.closest('button[data-name]'); if (!b || !data) return;
+      const s = (data.hotSpots || []).find((x) => x.name === b.dataset.name); if (s) flyTo(s, 4);
+    });
+  }
   $('copy').onclick = async () => {
     if (!data) return;
     const text = data.rundown.join('\n');
