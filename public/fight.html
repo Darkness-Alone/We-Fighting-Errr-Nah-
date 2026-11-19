@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-tg7QpoXWt2Xsy91vIuBgpEAOM1JwNOlGP1Rk7+vB4mc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.gdeltproject.org https://weinthisthang.goatcounter.com; img-src 'self' data: https://weinthisthang.goatcounter.com; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Deep Dive · We Beefin Index</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<script>
+// If the page code can't start (an error, a blocked script), say so on the page instead of hanging on
+// "Checking who's beefin…". Plain old JavaScript on purpose, so it runs even where the main script can't.
+(function () {
+  var START = 'Checking who';
+  function show(text) {
+    var el = document.getElementById('fresh'), dot = document.getElementById('dot');
+    if (!el || (el.textContent.indexOf(START) !== 0 && el.textContent.indexOf('Page error') !== 0)) return;
+    el.textContent = 'Page error: ' + text;
+    if (dot) dot.className = 'dot stale';
+  }
+  window.addEventListener('error', function (e) {
+    show(((e && e.message) || 'a script did not load') + (e && e.lineno ? ' (line ' + e.lineno + ')' : ''));
+  });
+  document.addEventListener('securitypolicyviolation', function (e) {
+    if (e.effectiveDirective && e.effectiveDirective.indexOf('script-src') === 0)
+      show('the security policy blocked this page\'s own script (line ' + e.lineNumber + '). Run npm run csp and redeploy.');
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    show(String((e && e.reason && (e.reason.message || e.reason)) || 'unknown'));
+  });
+})();
+</script>
+</head>
+<body data-page="fight">
+<div class="wrap" id="top">
+  <nav class="nav" aria-label="Pages"><a href="./">The Front Page</a><a href="wire.html">The Wire</a><a href="card.html">The Card</a><a href="vault.html">The Vault</a></nav>
+  <div class="bar">
+    <strong>WE FIGHTING ERRR NAH?</strong>
+    <span id="utc">--:--:-- Zulu</span>
+    <span class="live"><span class="dot" id="dot"></span><span id="fresh">Checking who's beefin…</span></span>
+    <noscript><span class="note" style="color:var(--orange)">JavaScript is turned off for this site, so no reading can load. Turn it on in your browser's site settings.</span></noscript>
+  </div>
+  <p class="back"><a href="card.html">← Back to The Card</a></p>
+  <section class="poster" id="poster" hidden></section>
+  <p class="empty" id="fightmissing" hidden></p>
+
+  <div class="grid even">
+  <section class="panel" id="tapepanel">
+    <header><h2>Tale of the Tape</h2><span class="note">Last 24h, as coded by GDELT</span></header>
+    <div id="tape"></div>
+  </section>
+  <section class="panel" id="cornerpanel">
+    <header><h2>Cornermen</h2><span class="note">Who's backing each side · curated, approximate</span></header>
+    <div id="corners"></div>
+  </section>
+  </div>
+
+  <section class="panel" id="presser" hidden>
+    <header><h2>Press Conference</h2><span class="note" id="pressernote">The sharpest recent line from each side</span></header>
+    <div class="corner2" id="presserbody"></div>
+    <p class="note">Pulled from headlines and channel posts where that side is the one talking, not from full transcripts. Follow the link for the whole story.</p>
+  </section>
+
+  <div class="grid even">
+  <section class="panel" id="rematchpanel">
+    <header><h2>Rematch History</h2><span class="note">The last time these two flared up</span></header>
+    <div id="rematch"></div>
+  </section>
+  <section class="panel" id="pairhistpanel">
+    <header><h2>Talk, Flexin', Hands</h2><span class="note">One bar a day, from stored readings</span></header>
+    <div id="pairhist"></div>
+  </section>
+  </div>
+
+  <section class="panel" id="homepanel">
+    <header><h2>Home Crowd</h2><span class="note">What each side's own press is running · last 48h</span></header>
+    <div class="corner2" id="homecrowd"></div>
+  </section>
+
+  <section class="panel" id="pairlinepanel">
+    <header><h2>Timeline</h2><span class="note">Reports naming both sides, last 48h, by beef type</span></header>
+    <div id="pairline"></div>
+  </section>
+
+  <section class="panel" id="pbppanel">
+    <header><h2>Play-by-Play</h2><span class="note">Every report naming both sides · newest first</span></header>
+    <ul class="wire" id="pbp"></ul>
+    <p class="more" id="pbpmore" hidden><button class="btn" type="button" id="pbpbtn">Show more</button></p>
+  </section>
+  <footer class="foot">
+    <p>For entertainment and situational awareness. Not a prediction, not advice, and nothing here is an official alert level.</p>
+    <p><a href="./">The Front Page</a> · <a href="wire.html">The Wire</a> · <a href="card.html">The Card</a> · <a href="vault.html">The Vault</a> · <a href="vault.html#receipts">How the number is made</a></p>
+  </footer>
+</div>
+<script src="app.js"></script>
+<!-- Visitor counter (GoatCounter: daily visitors, countries, referrers; no cookies, no IPs kept).
+     count.js is GoatCounter's own script, served from this site so no outside code runs here. -->
+<script data-goatcounter="https://weinthisthang.goatcounter.com/count" async src="count.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-tg7QpoXWt2Xsy91vIuBgpEAOM1JwNOlGP1Rk7+vB4mc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.gdeltproject.org https://weinthisthang.goatcounter.com; img-src 'self' data: https://weinthisthang.goatcounter.com; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Vault · We Beefin Index</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<script>
+// If the page code can't start (an error, a blocked script), say so on the page instead of hanging on
+// "Checking who's beefin…". Plain old JavaScript on purpose, so it runs even where the main script can't.
+(function () {
+  var START = 'Checking who';
+  function show(text) {
+    var el = document.getElementById('fresh'), dot = document.getElementById('dot');
+    if (!el || (el.textContent.indexOf(START) !== 0 && el.textContent.indexOf('Page error') !== 0)) return;
+    el.textContent = 'Page error: ' + text;
+    if (dot) dot.className = 'dot stale';
+  }
+  window.addEventListener('error', function (e) {
+    show(((e && e.message) || 'a script did not load') + (e && e.lineno ? ' (line ' + e.lineno + ')' : ''));
+  });
+  document.addEventListener('securitypolicyviolation', function (e) {
+    if (e.effectiveDirective && e.effectiveDirective.indexOf('script-src') === 0)
+      show('the security policy blocked this page\'s own script (line ' + e.lineNumber + '). Run npm run csp and redeploy.');
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    show(String((e && e.reason && (e.reason.message || e.reason)) || 'unknown'));
+  });
+})();
+</script>
+</head>
+<body data-page="vault">
+<div class="wrap" id="top">
+  <nav class="nav" aria-label="Pages"><a href="./">The Front Page</a><a href="wire.html">The Wire</a><a href="card.html">The Card</a><a href="vault.html" aria-current="page">The Vault</a></nav>
+  <div class="bar">
+    <strong>WE FIGHTING ERRR NAH?</strong>
+    <span id="utc">--:--:-- Zulu</span>
+    <span class="live"><span class="dot" id="dot"></span><span id="fresh">Checking who's beefin…</span></span>
+    <noscript><span class="note" style="color:var(--orange)">JavaScript is turned off for this site, so no reading can load. Turn it on in your browser's site settings.</span></noscript>
+  </div>
+  <div class="grid even">
+  <div class="col">
+  <section class="panel" id="streakpanel">
+    <header><h2>The Streak</h2><span class="note">Days in a row at today's level</span></header>
+    <div id="streakbig"></div>
+  </section>
+  <section class="panel grow" id="logpanel">
+    <header><h2>The Beef Log</h2><span class="note">Every status and TheseHandsCon change</span></header>
+    <div class="stack" id="log" style="gap:6px"></div>
+  </section>
+  </div>
+  <section class="panel" id="recordpanel">
+    <header><h2>The Record Book</h2><span class="note" id="recordnote"></span></header>
+    <div class="stack" id="records"></div>
+  </section>
+  </div>
+
+  <section class="panel" id="receipts">
+    <header><h2>Receipts</h2><span class="note" id="conf"></span></header>
+    <ul class="srcs" id="srcs"></ul>
+    <details id="downwrap" hidden><summary id="downsum"></summary><ul class="srcs" id="down" style="margin-top:8px"></ul></details>
+    <div class="method" id="method">
+      <p><b>We Beefin Index</b> blends four ingredients. <b>The Action</b> (35%) is how much of the world's news GDELT codes as one state using force on another, plus how hard the hottest matchup is going. <b>The Chatter</b> (35%) is the share of headlines about fighting, weighted by how bad, across the wider press and the front pages of major outlets. <b>The Big Dogs</b> (20%) is friction between nuclear powers plus nuclear-weapons talk. <b>The Money</b> (10%) is Wall Street's fear gauge and the oil price. A missing ingredient hands its share to the others.</p>
+      <p><b>TheseHandsCon</b> estimates where US military readiness would sit on the DEFCON scale, so a war the US is not part of barely moves it. It is built from three signals: the US or a US ally squaring off with Russia, China or North Korea (the only route to levels 2 and 1); US forces in combat with anyone else (which tops out inside level 3); and nuclear talk in the press. US forces trading fire with any state means level 4 or tighter. The US trading blows with a nuclear rival, or a nuclear test anywhere, means level 3 or tighter.</p>
+      <p><b>OSINT</b> scroller posts come from public Telegram channels, some partisan or state-linked. They are shown as they come and never counted in any score: they are fast and often unverified.</p>
+      <p><b>Beef Clock</b> starts from the official Doomsday Clock and moves with the nuclear reading: every 30 points hotter halves the time left. The official clock is set once a year by the Bulletin of the Atomic Scientists.</p>
+      <p>The index rises fast and falls slowly on purpose, and a status only relaxes once the index is 2 points clear of the line, so it does not flicker at a boundary. Every curve and band was set against GDELT's archive of real days:</p>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>Day</th><th>What happened</th><th class="num">Index</th><th class="num">HandsCon</th></tr></thead>
+      <tbody>
+        <tr><td>5 Jun 2019</td><td>A quiet day</td><td class="num">23</td><td class="num">5</td></tr>
+        <tr><td>15 Jun 2021</td><td>A quiet day</td><td class="num">16</td><td class="num">5</td></tr>
+        <tr><td>9 Aug 2017</td><td>"Fire and fury": US and North Korea trade nuclear threats</td><td class="num">52</td><td class="num">2</td></tr>
+        <tr><td>27 Feb 2019</td><td>India and Pakistan dogfight; US–Russia row over the INF nuclear treaty</td><td class="num">43</td><td class="num">3</td></tr>
+        <tr><td>8 Jan 2020</td><td>Iran fires missiles at US bases in Iraq</td><td class="num">74</td><td class="num">3</td></tr>
+        <tr><td>24 Feb 2022</td><td>Russia invades Ukraine</td><td class="num">80</td><td class="num">3</td></tr>
+        <tr><td>15 Mar 2023</td><td>A Russian jet downs a US drone over the Black Sea</td><td class="num">36</td><td class="num">3</td></tr>
+        <tr><td>8 Oct 2023</td><td>Hamas attack, Gaza war begins (US not in the fight)</td><td class="num">71</td><td class="num">5</td></tr>
+        <tr><td>14 Apr 2024</td><td>Iran fires missiles and drones at Israel; US forces help shoot them down</td><td class="num">84</td><td class="num">4</td></tr>
+        <tr><td>20 Nov 2024</td><td>US-supplied missiles hit Russia, Moscow lowers its nuclear threshold</td><td class="num">61</td><td class="num">2</td></tr>
+        <tr><td>7 May 2025</td><td>India and Pakistan exchange strikes (US not in the fight)</td><td class="num">50</td><td class="num">5</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Back-tested on GDELT data only, since front pages and markets are not archived the same way. For entertainment and situational awareness. Real DEFCON levels are classified; nothing here is one.</p>
+  </section>
+  <footer class="foot">
+    <p>For entertainment and situational awareness. Not a prediction, not advice, and nothing here is an official alert level.</p>
+    <p><a href="./">The Front Page</a> · <a href="wire.html">The Wire</a> · <a href="card.html">The Card</a> · <a href="vault.html">The Vault</a> · <a href="vault.html#receipts">How the number is made</a></p>
+  </footer>
+</div>
+<script src="app.js"></script>
+<!-- Visitor counter (GoatCounter: daily visitors, countries, referrers; no cookies, no IPs kept).
+     count.js is GoatCounter's own script, served from this site so no outside code runs here. -->
+<script data-goatcounter="https://weinthisthang.goatcounter.com/count" async src="count.js"></script>
+</body>
+</html>
