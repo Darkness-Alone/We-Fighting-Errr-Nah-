@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-tg7QpoXWt2Xsy91vIuBgpEAOM1JwNOlGP1Rk7+vB4mc=' 'sha256-uQgLBNUB9jPO5ZK90mToMzSvi1Pj8m0MOslDK0peguU=' 'sha256-ZeS7C5YvFxuGfMlskYOGy9CsBafgPc5R3oJYHchZwho='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.gdeltproject.org https://weinthisthang.goatcounter.com; img-src 'self' data: https://weinthisthang.goatcounter.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-tg7QpoXWt2Xsy91vIuBgpEAOM1JwNOlGP1Rk7+vB4mc=' 'sha256-uQgLBNUB9jPO5ZK90mToMzSvi1Pj8m0MOslDK0peguU=' 'sha256-1diOnjoivfgBgddZGCGHFKPrYiPtRO+HWHI1nGTWPOs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.gdeltproject.org https://weinthisthang.goatcounter.com; img-src 'self' data: https://weinthisthang.goatcounter.com; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>We Beefin Index</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -16,7 +16,7 @@
   --panel: #0c1219;
   --panel-2: #111a24;
   --line: #1d2a3a;
-  --dot: #2e435d;
+  --dot: #4a6b94;
   --fg: #d5e0ee;
   --muted: #7f91a8;
   --green: #32d373;
@@ -87,6 +87,8 @@ p { margin: 0; }
 .hero h1 span { color: var(--tone, var(--fg)); }
 .gauge { width: 100%; max-width: 560px; height: auto; display: block; }
 .gauge text { font-family: var(--mono); }
+/* Dark halo so the needle, which sweeps the band, stays readable behind the label text. */
+.gauge .glabel { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
 .needle { transform-origin: 200px 204px; transition: transform 1.4s cubic-bezier(.2, .9, .25, 1); }
 .trend { display: inline-flex; gap: var(--s2); align-items: center; border: 1px solid var(--line); padding: 3px 10px; font-size: 12.5px; }
 .trend b { color: var(--tone, var(--fg)); }
@@ -138,7 +140,8 @@ p { margin: 0; }
 .heat .sub { grid-column: 1 / -1; color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
 
 /* fight card */
-.bout { display: grid; gap: 5px; padding-bottom: var(--s3); border-bottom: 1px solid var(--line); }
+.bout { display: grid; gap: 7px; padding-bottom: var(--s3); border-bottom: 1px solid var(--line); }
+.bout .note { line-height: 1.6; }
 .bout:last-child { border-bottom: 0; padding-bottom: 0; }
 .bout .top { display: flex; justify-content: space-between; gap: var(--s2); flex-wrap: wrap; align-items: center; }
 .bout .name { font-family: var(--display); font-size: 19px; line-height: 1.2; }
@@ -150,6 +153,8 @@ p { margin: 0; }
 .key i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; }
 .chip { display: inline-block; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; padding: 1px 6px; border: 1px solid currentColor; white-space: nowrap; }
 .chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+/* Keep a label + its value (or a short phrase) on one line; wrapping happens between items, not inside them. */
+.nowrap { white-space: nowrap; }
 
 /* clocks */
 .clocks { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
@@ -165,13 +170,15 @@ p { margin: 0; }
 .tabs button[aria-pressed="true"] { color: var(--bg); background: var(--fg); border-color: var(--fg); }
 .wire { list-style: none; margin: 0; padding: 0; display: grid; gap: 0 var(--s5); }
 @media (min-width: 880px) { .wire { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.wire li { display: grid; gap: 3px; padding: 9px 0; border-bottom: 1px solid var(--line); align-content: start; }
-.wire .meta { color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+.wire li { display: grid; gap: 5px; padding: 12px 0; border-bottom: 1px solid var(--line); align-content: start; }
+.wire .meta { color: var(--muted); font-size: 11.5px; line-height: 1.6; overflow-wrap: anywhere; }
 .empty { color: var(--muted); padding: var(--s3) 0; }
 
 /* tiles */
-.tiles { display: grid; gap: var(--s2); grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); }
-.tile { border: 1px solid var(--line); background: var(--panel-2); padding: 8px 10px; display: grid; gap: 1px; align-content: start; }
+/* Flex, not auto-fit grid: the last row's tiles grow to fill the row, so a lone tile never
+   leaves a big empty cell beside it (five Birds Up groups in two columns used to orphan Movers). */
+.tiles { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.tile { flex: 1 1 130px; min-width: 0; border: 1px solid var(--line); background: var(--panel-2); padding: 8px 10px; display: grid; gap: 1px; align-content: start; }
 .tile .v { font-family: var(--display); font-size: 26px; line-height: 1.1; }
 .tile .k { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
 .tags { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -226,6 +233,7 @@ table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
 th { text-align: left; font-weight: 500; color: var(--muted); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
 th, td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
 td.num, th.num { text-align: right; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
 details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
 @media (prefers-reduced-motion: reduce) {
   .ticker .run { animation: none; } .ticker .lane { overflow-x: auto; }
@@ -272,7 +280,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   <section class="panel" aria-label="Search the news">
     <header><h2>Search the Intel</h2><span class="note">Every report and OSINT post from the last 48 hours, plus a live worldwide news search</span></header>
     <form class="search" id="qform" role="search">
-      <input id="q" type="search" placeholder="Type a word or words: Venezuela, drone strike, Hormuz…" autocomplete="off" aria-label="Keyword search">
+      <input id="q" type="search" placeholder="Venezuela, drone strike, Hormuz…" autocomplete="off" aria-label="Keyword search">
       <button class="btn" type="submit">Search</button>
     </form>
     <div class="picks" id="picks"></div>
@@ -467,7 +475,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   }
   const toMidnight = (sec) => (sec >= 120 ? `${Math.floor(sec / 60)} min ${sec % 60} s to midnight` : `${sec} seconds to midnight`);
   const meter = (label, value, color, right, detail) =>
-    `<div class="ing"><span><b>${esc(label)}</b></span><span>${value ?? '–'}${right ? ` <span class="pts">${esc(right)}</span>` : ''}</span>` +
+    `<div class="ing"><span><b>${esc(label)}</b></span><span>${value ?? '–'}${right ? ` <span class="pts">· ${esc(right)}</span>` : ''}</span>` +
     `<div class="track"><div class="fill" style="width:${value ?? 0}%;background:${color}"></div></div>${detail ? `<span class="d">${esc(detail)}</span>` : ''}</div>`;
 
   // ---- gauge: four equal segments, needle mapped piecewise across the real thresholds
@@ -479,26 +487,37 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
       if (index <= st[k].max || k === st.length - 1) return (k + (index - st[k].min) / (st[k].max - st[k].min)) / st.length;
     }
   }
+  // Two lines, split between words so both halves are close in length. A band's arc holds about
+  // 13 characters on the inner line, so a label too long for two lines (Told Ya To Watch Ya Mouth)
+  // goes to three short lines instead of clipping.
   function lines(label) {
     const w = label.toUpperCase().split(' ');
     if (w.length <= 2) return [w.join(' ')];
-    if (w.length === 3) return [w[0], w.slice(1).join(' ')];
+    let best = 1, bestDiff = Infinity;
+    for (let i = 1; i < w.length; i++) {
+      const diff = Math.abs(w.slice(0, i).join(' ').length - w.slice(i).join(' ').length);
+      if (diff < bestDiff) { bestDiff = diff; best = i; }
+    }
+    const two = [w.slice(0, best).join(' '), w.slice(best).join(' ')];
+    if (Math.max(...two.map((t) => t.length)) <= 13 || w.length < 3) return two;
     const out = [[], [], []];
     w.forEach((x, i) => out[Math.min(2, Math.floor((i * 3) / w.length))].push(x));
     return out.map((a) => a.join(' ')).filter(Boolean);
   }
   function drawGauge(d) {
     const st = d.scales.statuses, k4 = st.length, gap = 0.006;
-    let defs = '', body = '';
+    let defs = '', body = '', labels = '';
     st.forEach((b, k) => {
       const f0 = k / k4 + gap, f1 = (k + 1) / k4 - gap, on = d.status.key === b.key, c = TONE[b.color];
       const [ox, oy] = pt(f0, RO), [ix, iy] = pt(f1, RI);
       body += `<path d="M ${ox.toFixed(2)} ${oy.toFixed(2)} ${arc(f1, RO, 1)} L ${ix.toFixed(2)} ${iy.toFixed(2)} ${arc(f0, RI, 0)} Z" fill="${c}" fill-opacity="${on ? 0.34 : 0.1}" stroke="${c}" stroke-width="${on ? 2.5 : 1.5}"/>`;
-      const ls = lines(b.label), step = 15, mid = (RO + RI) / 2 + ((ls.length - 1) * step) / 2 - 4;
+      const ls = lines(b.label), step = 16, mid = (RO + RI) / 2 + ((ls.length - 1) * step) / 2 - 4;
       ls.forEach((t, j) => {
         const r = mid - j * step, [x, y] = pt(f0, r), id = `gl${k}_${j}`;
         defs += `<path id="${id}" d="M ${x.toFixed(2)} ${y.toFixed(2)} ${arc(f1, r, 1)}" fill="none"/>`;
-        body += `<text font-size="11.5" font-weight="${on ? 700 : 500}" fill="${on ? 'var(--fg)' : c}" letter-spacing=".6"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(t)}</textPath></text>`;
+        // Labels render last, on top of the needle, with a dark halo: the needle sweeps the band
+        // and used to cross the text. 12px is the largest that fits the shortest arc (see lines()).
+        labels += `<text class="glabel" font-size="12" font-weight="${on ? 700 : 500}" fill="${on ? 'var(--fg)' : c}" letter-spacing=".1"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(t)}</textPath></text>`;
       });
     });
     [0, ...st.map((b) => b.max)].forEach((v, k) => {
@@ -514,7 +533,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     body += `<polygon class="needle" id="needle" points="${CX - 5},${CY} ${CX + 5},${CY} ${CX},${CY - RO + 6}" fill="${c}" style="transform:rotate(-90deg)"/>`;
     body += `<path d="M ${CX - 62} ${CY} A 62 62 0 0 1 ${CX + 62} ${CY} Z" fill="var(--panel-2)" stroke="${c}" stroke-width="1.5"/>`;
     body += `<text x="${CX}" y="${CY - 8}" font-size="50" font-weight="700" text-anchor="middle" fill="${c}" style="font-family:var(--display)">${d.index}</text>`;
-    $('gauge').innerHTML = `<defs>${defs}</defs>${body}`;
+    $('gauge').innerHTML = `<defs>${defs}</defs>${body}${labels}`;
     requestAnimationFrame(() => requestAnimationFrame(() => { const el = $('needle'); if (el) el.style.transform = `rotate(${deg(d.index)}deg)`; }));
   }
 
@@ -555,7 +574,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     const g = cv.getContext('2d');
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, h);
-    const cell = w / COLS, r = Math.max(0.6, cell * 0.28) * (1 + (k - 1) * 0.35), sc = (wx, wy) => [(wx - ox) * k, (wy - oy) * k];
+    const cell = w / COLS, r = Math.max(0.7, cell * 0.32) * (1 + (k - 1) * 0.35), sc = (wx, wy) => [(wx - ox) * k, (wy - oy) * k];
     g.fillStyle = css('--dot');
     for (let i = 0; i < LAND.length; i++) {
       if (!LAND[i]) continue;
@@ -632,14 +651,15 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     const h = d.history || [];
     $('trendnote').textContent = h.length ? `${h.length} readings kept, up to 7 days` : '';
     if (h.length < 2) { $('history').innerHTML = '<p class="note">The trend line starts drawing after the second reading.</p>'; return; }
-    const W = 360, H = 110, t0 = h[0].t, t1 = h[h.length - 1].t, x = (t) => 4 + ((t - t0) / (t1 - t0 || 1)) * (W - 40), y = (v) => H - 6 - (v / 100) * (H - 14);
+    const W = 360, H = 124, t0 = h[0].t, t1 = h[h.length - 1].t, x = (t) => 4 + ((t - t0) / (t1 - t0 || 1)) * (W - 40), y = (v) => H - 20 - (v / 100) * (H - 28);
     let s = '';
     d.scales.statuses.slice(0, -1).forEach((b) => {
-      s += `<line x1="4" x2="${W - 36}" y1="${y(b.max)}" y2="${y(b.max)}" stroke="var(--line)" stroke-dasharray="3 4"/><text x="${W - 32}" y="${y(b.max) + 3}" font-size="9" fill="var(--muted)">${b.max}</text>`;
+      s += `<line x1="4" x2="${W - 36}" y1="${y(b.max)}" y2="${y(b.max)}" stroke="var(--line)" stroke-dasharray="3 4"/><text x="${W - 32}" y="${y(b.max) + 3}" font-size="10" fill="var(--muted)">${b.max}</text>`;
     });
     const pts = h.map((p) => `${x(p.t).toFixed(1)},${y(p.i).toFixed(1)}`), tone = TONE[d.status.color];
     s += `<polygon points="${x(t0)},${y(0)} ${pts.join(' ')} ${x(t1)},${y(0)}" fill="${tone}" fill-opacity=".12"/><polyline points="${pts.join(' ')}" fill="none" stroke="${tone}" stroke-width="2"/>`;
-    s += `<circle cx="${x(t1)}" cy="${y(h[h.length - 1].i)}" r="3.5" fill="${tone}"/>`;
+    s += `<circle cx="${x(t1)}" cy="${y(h[h.length - 1].i)}" r="4" fill="${tone}"/>`;
+    s += `<text x="4" y="${H - 2}" font-size="10" fill="var(--muted)">${ago(t0)}</text><text x="${W - 36}" y="${H - 2}" font-size="10" fill="var(--muted)" text-anchor="end">now</text>`;
     const lo = Math.min(...h.map((p) => p.i)), hi = Math.max(...h.map((p) => p.i));
     $('history').innerHTML = `<p class="eyebrow" style="margin-bottom:6px">Index over the last ${ago(t0).replace(' ago', '')} · low ${lo} · high ${hi}</p><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Index trend">${s}</svg>`;
   }
@@ -652,30 +672,30 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
       path += `${i ? 'L' : 'M'} ${x(yr).toFixed(1)} ${ly(sec).toFixed(1)} L ${x(nx).toFixed(1)} ${ly(sec).toFixed(1)} `;
     });
     [[1020, '17 min'], [420, '7 min'], [180, '3 min'], [d.doomsday.official.seconds, `${d.doomsday.official.seconds} s`]].forEach(([sec, label]) => {
-      s += `<line x1="6" x2="${W - 52}" y1="${ly(sec).toFixed(1)}" y2="${ly(sec).toFixed(1)}" stroke="var(--line)" stroke-dasharray="2 5"/><text x="${W - 48}" y="${(ly(sec) + 3).toFixed(1)}" font-size="9" fill="var(--muted)">${label}</text>`;
+      s += `<line x1="6" x2="${W - 52}" y1="${ly(sec).toFixed(1)}" y2="${ly(sec).toFixed(1)}" stroke="var(--line)" stroke-dasharray="2 5"/><text x="${W - 48}" y="${(ly(sec) + 3).toFixed(1)}" font-size="10" fill="var(--muted)">${label}</text>`;
     });
-    s += `<path d="${path}" fill="none" stroke="var(--fg)" stroke-width="1.6"/>`;
-    [1947, 1970, 1991, 2010, 2026].forEach((yr, i) => { s += `<text x="${x(yr).toFixed(1)}" y="${H - 4}" font-size="9" fill="var(--muted)" text-anchor="${i ? 'middle' : 'start'}">${yr}</text>`; });
+    s += `<path d="${path}" fill="none" stroke="var(--fg)" stroke-width="2"/>`;
+    [1947, 1970, 1991, 2010, 2026].forEach((yr, i) => { s += `<text x="${x(yr).toFixed(1)}" y="${H - 4}" font-size="10" fill="var(--muted)" text-anchor="${i ? 'middle' : 'start'}">${yr}</text>`; });
     if (d.doomsday.beefSeconds != null) {
       const by = ly(Math.max(40, Math.min(1100, d.doomsday.beefSeconds))), bx = x(y1 - 0.4), c = TONE[band(d.doomsday.score)];
-      s += `<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="4" fill="${c}"/><line x1="${(bx - 14).toFixed(1)}" x2="${(bx + 6).toFixed(1)}" y1="${by.toFixed(1)}" y2="${by.toFixed(1)}" stroke="${c}" stroke-width="1.5"/>`;
+      s += `<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="7" fill="none" stroke="${c}" stroke-width="1" opacity=".6"/><circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="5.5" fill="${c}" stroke="var(--bg)" stroke-width="1.5"/><line x1="${(bx - 14).toFixed(1)}" x2="${(bx + 6).toFixed(1)}" y1="${by.toFixed(1)}" y2="${by.toFixed(1)}" stroke="${c}" stroke-width="1.5"/>`;
     }
-    s += `<text x="6" y="9" font-size="9" fill="var(--muted)">closer to midnight ↑</text>`;
+    s += `<text x="6" y="9" font-size="10" fill="var(--muted)">closer to midnight ↑</text>`;
     $('timeline').innerHTML = `<p class="eyebrow" style="margin-bottom:6px">Official clock since 1947 · dot = Beef Clock now</p><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Doomsday Clock settings since 1947">${s}</svg>`;
   }
   const spark = (vals, color) => {
     const lo = Math.min(...vals), hi = Math.max(...vals), W = 120, H = 28;
     const pts = vals.map((v, i) => `${((i / (vals.length - 1)) * W).toFixed(1)},${(H - 3 - ((v - lo) / (hi - lo || 1)) * (H - 6)).toFixed(1)}`).join(' ');
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/></svg>`;
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polygon points="0,${H} ${pts} ${W},${H}" fill="${color}" fill-opacity=".14"/><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5"/></svg>`;
   };
 
   // ---- wire
   function storyItem(s, d) {
     const type = s.calm ? d.scales.calm : d.scales.beefTypes[s.tier].name;
     const color = s.calm ? 'var(--blue)' : TIER_TONE[s.tier];
-    const who = s.n > 1 ? `${s.n} outlets: ${s.sources.slice(0, 4).map(esc).join(', ')}` : esc(s.source);
+    const who = s.n > 1 ? `${s.n} outlets: ${s.sources.slice(0, 4).map((x) => `<span class="nowrap">${esc(x)}</span>`).join(', ')}` : esc(s.source);
     const seen = new Set([s.source]);
-    const more = (s.more || []).filter((m) => !seen.has(m.source) && seen.add(m.source)).slice(0, 3).map((m) => link(m.url, esc(m.source))).join(', ');
+    const more = (s.more || []).filter((m) => !seen.has(m.source) && seen.add(m.source)).slice(0, 3).map((m) => `<span class="nowrap">${link(m.url, esc(m.source))}</span>`).join(', ');
     return `<li><span class="chips"><span class="chip" style="color:${color}">${esc(type)}</span></span><div>${link(s.url, esc(s.title))}</div>` +
       `<div class="meta">${who} · ${ago(s.time)}${more ? ` · also at ${more}` : ''}</div></li>`;
   }
@@ -692,7 +712,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     $('redditnote').textContent = `Newest from ${((d.reddit && d.reddit.subs) || []).map((s) => 'r/' + s).join(', ')} · user-written titles, not scored`;
     $('reddit').innerHTML = rdShow.map((p) => `<li><span class="chips"><span class="chip" style="color:${p.calm ? 'var(--blue)' : TIER_TONE[p.tier]}">${esc(p.calm ? d.scales.calm : d.scales.beefTypes[p.tier].name)}</span></span><div>${link(p.url, esc(p.title))}</div><div class="meta">r/${esc(p.sub)} · ${ago(p.time)}</div></li>`).join('');
     $('presswrap').hidden = !d.wire.press.length;
-    $('press').innerHTML = d.wire.press.map((p) => `<li><div>${link(p.url, esc(p.title))}</div><div class="meta">${p.n} sites, including ${p.sample.map(esc).join(', ')} · ${ago(p.time)}</div></li>`).join('');
+    $('press').innerHTML = d.wire.press.map((p) => `<li><div>${link(p.url, esc(p.title))}</div><div class="meta">${p.n} sites, including ${p.sample.map((x) => `<span class="nowrap">${esc(x)}</span>`).join(', ')} · ${ago(p.time)}</div></li>`).join('');
   }
 
   // Speed is set in screen pixels per second, so long posts and short headlines move equally fast.
@@ -844,10 +864,10 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
   function render(d) {
     data = d;
     const good = d.sources.filter((s) => s.ok), bad = d.sources.filter((s) => !s.ok);
-    $('srcs').innerHTML = good.map((s) => `<li>${esc(s.name)}${s.note ? ` <span>${esc(s.note)}</span>` : ''}</li>`).join('');
+    $('srcs').innerHTML = good.map((s) => `<li>${esc(s.name)}${s.note ? ` <span>· ${esc(s.note)}</span>` : ''}</li>`).join('');
     $('downwrap').hidden = !bad.length;
     $('downsum').textContent = `${bad.length} source${bad.length === 1 ? '' : 's'} not reporting on this reading`;
-    $('down').innerHTML = bad.map((s) => `<li class="bad">${esc(s.name)} <span>${esc(s.note || '')}</span></li>`).join('');
+    $('down').innerHTML = bad.map((s) => `<li class="bad">${esc(s.name)}${s.note ? ` <span>· ${esc(s.note)}</span>` : ''}</li>`).join('');
     if (d.index == null) {
       $('status').textContent = 'No Signal';
       $('fresh').textContent = 'Every feed failed. Retrying.';
@@ -896,7 +916,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     // map + regions
     if (picked) picked = (d.hotSpots || []).find((s) => s.name === picked.name) || null;
     drawMap();
-    $('spots').innerHTML = (d.hotSpots || []).slice(0, 8).map((s) => `<li><button type="button" data-name="${esc(s.name)}" title="Zoom to ${esc(s.name)}">${esc(s.name)} <b>${s.n}</b></button></li>`).join('') || '<li class="note">No event data on this reading.</li>';
+    $('spots').innerHTML = (d.hotSpots || []).slice(0, 8).map((s) => `<li><button type="button" data-name="${esc(s.name)}" title="Zoom to ${esc(s.name)}">${esc(s.name)} · <b>${s.n}</b></button></li>`).join('') || '<li class="note">No event data on this reading.</li>';
     $('theaters').innerHTML = d.theaters.map((r) => {
       const sub = [r.hands && `${n(r.hands)} force reports`, r.stories && `${r.stories} stor${r.stories === 1 ? 'y' : 'ies'}`].filter(Boolean).join(' · ');
       return `<div class="heat"><span class="nm">${esc(r.name)}</span><span class="val">${r.heat}</span><div class="track"><div class="fill" style="width:${r.heat}%;background:${TONE[band(r.heat * 0.9)]}"></div></div>` +
@@ -909,7 +929,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
       const rung = d.scales.rungs[m.rung - 1], [stakes, sc] = STAKES[m.stakes] || STAKES.regional;
       const move = m.move === 'up' ? ' · <span class="up">heating up right now</span>' : m.move === 'down' ? ' · <span class="down">quieter right now</span>' : '';
       return `<div class="bout"><div class="top"><span class="eyebrow">${slots[Math.min(i, 2)]}</span><span class="chips"><span class="chip" style="color:${RUNG_TONE[m.rung]}" title="${esc(rung.name + ': ' + rung.what)}">${esc(rung.name)}</span><span class="chip" style="color:${sc}" title="${esc(STAKES[m.stakes]?.[2] || '')}">${stakes}</span></span></div>` +
-        `<div class="name">${esc(m.a)} <i>vs</i> ${esc(m.b)}</div>` +
+        `<div class="name">${esc(m.a)}&nbsp;<i>vs</i>&nbsp;${esc(m.b)}</div>` +
         `<div class="split"><span class="k-talk" style="flex:${m.talk}"></span><span class="k-flex" style="flex:${m.flex}"></span><span class="k-hands" style="flex:${m.hands}"></span></div>` +
         `<div class="note">${n(m.talk)} talk · ${n(m.flex)} flexin' · ${n(m.hands)} hands (${m.handsPerHour} an hour)${move}</div></div>`;
     }).join('') || '<p class="empty">No matchups to show. The event feed is down, or the world took a day off.</p>';
@@ -939,8 +959,9 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     $('skypanel').hidden = !d.sky;
     if (d.sky) {
       $('sky').innerHTML = d.sky.groups.map((gr) => {
-        const where = Object.entries(gr.where).sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => `${v} ${k === 'position hidden' ? k : 'over ' + k}`).join(', ');
-        return `<div class="tile" title="${esc(gr.what)}"><span class="k">${esc(gr.name)}</span><span class="v">${gr.n}</span><span class="note">${esc(where || gr.what)}</span></div>`;
+        // Each "N place" chunk stays on one line; wrapping happens at the comma between chunks.
+        const where = Object.entries(gr.where).sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => `<span class="nowrap">${v} ${esc(k === 'position hidden' ? k : 'over ' + k)}</span>`).join(', ');
+        return `<div class="tile" title="${esc(gr.what)}"><span class="k">${esc(gr.name)}</span><span class="v">${gr.n}</span><span class="note">${where || esc(gr.what)}</span></div>`;
       }).join('');
       const usual = d.sky.usual != null ? ` Doomsday planes, bombers and tankers together: ${d.sky.strategic}, usually about ${d.sky.usual} (${d.sky.note}).` : ' Building a week of baseline before judging what is unusual.';
       const calls = d.sky.notable.length ? ` Up now: ${d.sky.notable.map((x) => `${esc(x.callsign || x.type)} (${esc(x.type)}, ${esc(x.region)})`).join(', ')}.` : '';
@@ -948,7 +969,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     }
     $('moneypanel').hidden = !d.money;
     if (d.money) {
-      const tile = (k, q, unit, color) => q ? `<div class="tile"><span class="k">${k}</span><span class="v">${unit}${q.price}</span><span class="note ${q.change5d > 0 ? 'up' : 'down'}">${q.change5d > 0 ? '▲' : '▼'} ${Math.abs(q.change5d)}% in 5 days</span>${spark(q.spark, color)}<span class="note">close of ${esc(q.date)}</span></div>` : '';
+      const tile = (k, q, unit, color) => q ? `<div class="tile"><span class="k">${k}</span><span class="v">${unit}${q.price}</span><span class="note ${q.change5d > 0 ? 'up' : 'down'}">${q.change5d > 0 ? '▲' : '▼'} ${Math.abs(q.change5d)}% in 5 days</span>${spark(q.spark, color)}<span class="note">close of <span class="nowrap">${esc(q.date)}</span></span></div>` : '';
       $('money').innerHTML = tile('Fear gauge (VIX)', d.money.vix, '', css('--yellow')) + tile('Oil (Brent)', d.money.oil, '$', css('--orange'));
     }
     $('advpanel').hidden = !d.advisories;
@@ -963,7 +984,7 @@ details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
     const q = d.nature.quakes || [], kp = d.nature.kp;
     const storm = kp ? (kp.kp >= 7 ? 'Severe geomagnetic storm' : kp.kp >= 5 ? 'Geomagnetic storm' : kp.kp >= 4 ? 'Unsettled' : 'Quiet') : null;
     $('nature').innerHTML =
-      (kp ? `<div><h3>Space weather · NOAA</h3><div>Planetary Kp <b>${kp.kp.toFixed(1)}</b> · ${storm} · 24h peak ${kp.max24h.toFixed(1)}</div></div>` : '') +
+      (kp ? `<div><h3>Space weather · NOAA</h3><div>Planetary Kp: <b>${kp.kp.toFixed(1)}</b> · ${storm} · 24h peak ${kp.max24h.toFixed(1)}</div></div>` : '') +
       `<div><h3>Significant earthquakes, 7 days · USGS</h3>${q.length ? q.map((e) => `<div>${link(e.url, esc(e.title))} <span class="note">· ${ago(e.time)}</span></div>`).join('') : '<div class="note">None logged this week.</div>'}</div>`;
 
     $('conf').textContent = `${d.confidence.label} · ${d.confidence.ok} of ${d.confidence.total} sources reporting`;
