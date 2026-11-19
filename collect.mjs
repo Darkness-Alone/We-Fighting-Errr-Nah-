@@ -15,11 +15,14 @@ import * as sc from './lib/score.mjs';
 import * as gd from './lib/gdelt.mjs';
 import { classify, clusterStories, prettySlug, BEEF_TYPES, CALM_NAME } from './lib/classify.mjs';
 import { theaterOfText, countryName, usFoeWeight, US_PEERS } from './lib/geo.mjs';
+import * as ex from './lib/extras.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const DATA_FILE = path.join(ROOT, 'public', 'data.json');
 export const STATE_FILE = path.join(ROOT, 'public', 'state.json');
 export const SEARCH_FILE = path.join(ROOT, 'public', 'search.json');
+export const HISTORY_FILE = path.join(ROOT, 'public', 'history.json');
+const CURATED_FILE = path.join(ROOT, 'public', 'curated.json');
 const SEARCH_HOURS = 48;
 
 // The Bulletin of the Atomic Scientists sets this once a year, in late January. Update it by hand then.
@@ -81,6 +84,7 @@ const hms = (secondsToMidnight) => {
 export async function collect(now = Date.now()) {
   const sources = [];
   const state = await loadState();
+  const curated = JSON.parse(await readFile(CURATED_FILE, 'utf8'));
   const store = state.gdelt || {};
 
   // ---- fetch everything at once
@@ -234,7 +238,9 @@ export async function collect(now = Date.now()) {
   const beefSeconds = sc.beefClockSeconds(DOOMSDAY_OFFICIAL.seconds, doom);
 
   // ---- what moved the index (before this reading joins the history)
-  const card = gdeltOk ? sc.fightCard(day, recent) : [];
+  // The card shows eight bouts. The next twelve (still real matchups, just quieter) are the undercard.
+  const fullCard = gdeltOk ? sc.fightCard(day, recent, 20) : [];
+  const card = fullCard.slice(0, 8), undercard = fullCard.slice(8);
   const move = index == null ? null : sc.explainMove(history, now, { index, action, chatter, bigdogs, money: moneyScore });
   const hints = { up: [], down: [] };
   const heating = card.filter((m) => m.move === 'up').slice(0, 2).map((m) => `${m.a} vs ${m.b}`);
@@ -340,14 +346,15 @@ export async function collect(now = Date.now()) {
   };
   // ---- keyword-search archive: everything the sources returned in the last 48 hours.
   // Row: [time, kind, source, title, url, tier, calm]. kind: news | defense | osint | reddit | press.
-  const row = (time, kind, source, title, url, tier, calm) => [time, kind, source, title, url, tier || 0, calm ? 1 : 0];
+  // Two more fields for the deep dives: the countries a headline names, and whose domestic press it is.
+  const row = (time, kind, source, title, url, tier, calm) => ex.tagRow([time, kind, source, title, url, tier || 0, calm ? 1 : 0], curated);
   const fresh = [
     ...items.map((it) => row(it.time, it.kind === 'front' ? 'news' : 'defense', it.source, it.title, it.url, it.tier, it.calm)),
     ...(tgFeed ? tgFeed.all : []).map((p) => row(p.time, 'osint', p.user, p.text, p.url, classify(p.text).tier, classify(p.text).calm)),
     ...(redditFresh || []).map((p) => row(p.time, 'reddit', `r/${p.sub}`, p.title, p.url, p.tier, p.calm)),
   ];
   const seenUrl = new Set();
-  const archive = [...fresh, ...(state.archive || [])]
+  const archive = [...fresh, ...(state.archive || []).map((r) => ex.tagRow(r, curated))]
     .filter((r) => r[0] > now - SEARCH_HOURS * HOUR && r[0] < now + HOUR && !seenUrl.has(r[4]) && seenUrl.add(r[4]))
     .slice(0, 6000);
   next.archive = archive;
@@ -356,15 +363,30 @@ export async function collect(now = Date.now()) {
     .map((f) => row(f.time, 'press', f.source, prettySlug(f.title), f.url, f.tier, f.calm)) : [];
   const search = { generatedAt: now, hours: SEARCH_HOURS, rows: [...archive, ...wider].sort((a, b) => b[0] - a[0]).slice(0, 15000) };
 
-  return { data, state: next, search };
+  // ---- features built on this reading (never fed back into the scores)
+  data.undercard = undercard;
+  data.pressers = ex.pressers(card, search.rows, now);
+  const corners = ex.cornerLists(search.rows, now, { pairs: fullCard.map((m) => [m.ca, m.cb]) });
+  data.cutman = corners.cut;
+  data.camp = corners.camp;
+  let days = state.days || ex.seedDays(state.history, sc.STATUSES);
+  if (index != null) days = ex.updateDays(days, now, { index, status: status.key, con: handsCon?.level, card: fullCard });
+  next.days = days;
+  data.streak = index == null ? null : { ...ex.streak(days, status.key, now), label: status.label };
+  data.records = ex.records(days, sc.STATUSES, now);
+  data.cardChanges = ex.cardChanges(days, now);
+  const historyFile = { generatedAt: now, days };
+
+  return { data, state: next, search, history: historyFile };
 }
 
 export async function collectAndWrite() {
-  const { data, state, search } = await collect();
+  const { data, state, search, history } = await collect();
   await mkdir(path.dirname(DATA_FILE), { recursive: true });
   await writeFile(DATA_FILE, JSON.stringify(data));
   await writeFile(STATE_FILE, JSON.stringify(state));
   await writeFile(SEARCH_FILE, JSON.stringify(search));
+  await writeFile(HISTORY_FILE, JSON.stringify(history));
   return data;
 }
 

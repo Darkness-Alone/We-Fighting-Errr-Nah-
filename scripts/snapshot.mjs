@@ -16,6 +16,12 @@ const data = JSON.parse(await readFile(path.join(root, 'public', 'data.json'), '
 let html = await readFile(path.join(root, 'public', 'index.html'), 'utf8');
 const json = JSON.stringify(data).replace(/</g, '\\u003c');
 html = html.replace('/*SNAPSHOT*/', () => `window.__SNAPSHOT__=${json};`); // baked data changes the script hash
+// Standalone: the shared stylesheet and page script are baked in too, and the other pages' links won't work offline.
+const css = await readFile(path.join(root, 'public', 'style.css'), 'utf8');
+const js = await readFile(path.join(root, 'public', 'app.js'), 'utf8');
+html = html
+  .replace('<link rel="stylesheet" href="style.css">', () => `<style>\n${css}</style>`)
+  .replace('<script src="app.js"></script>', () => `<script>\n${js}</script>`);
 // A snapshot is a standalone file: no visitor counter (count.js isn't next to it, and a local file shouldn't count).
 html = withCsp(html.replace(/<!-- Visitor counter[\s\S]*?<\/script>\n/, ''));
 if (fragment) {

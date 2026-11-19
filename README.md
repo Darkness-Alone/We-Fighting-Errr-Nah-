@@ -11,25 +11,45 @@ No dependencies, no API keys, no accounts. Just Node.
 
 ## What's on the page
 
+The site is four pages plus a deep dive, with the same nav bar on each: **THE FRONT PAGE / THE WIRE / THE CARD / THE VAULT**. Old one-page bookmarks still work: a link like `…/#skypanel` or `…/#receipts` forwards to the page the section moved to.
+
+**The Front Page** (`index.html`, same address as before): the daily check-in.
+
 | Panel | What it shows |
 | --- | --- |
+| **Search the Intel** | Type a word or words to get every report that mentions them: the last 48 hours from all the news feeds, defense press, OSINT channels, Reddit and conflict headlines from thousands of sites, newest first and filterable by kind. Press Search to add live worldwide results from GDELT's news search (last 3 days) |
 | **We Beefin Index** | A 0–100 gauge, its status, the trend, a ghost needle for 24 hours ago, and what went into the number |
+| **The Streak** | Under the gauge: how many days in a row the index has closed at today's level |
+| **The Judges' Split** | Under the gauge, only when the ingredients land two or more levels apart (The Action says Square Up while The Money says We Cool) |
+| **What moved it** | How much the index moved and which ingredients pushed it, with the stories and matchups behind the move |
 | **TheseHandsCon** | An estimate of US military readiness on a DEFCON-style scale, 5 (normal) to 1 (nuclear war), with the reasons for it |
 | **The Rundown** | The whole picture in four or five sentences, with a copy button |
-| **Where It's Poppin** | A world map of places named in reports of force, plus heat by region. Zoom in (scroll, pinch, double-click or +) and drag to pull apart close dots; zoomed in, each dot is labelled and the place list flies you to a spot |
-| **The Fight Card** | Country-vs-country matchups: how much is talk, how much is flexin', how much is hands |
+| **The Weigh-In** | Today's index, TheseHandsCon and main event on one card sized for a single phone screenshot |
+| **Where It's Poppin** | A world map of places named in reports of force, plus heat by region. Zoom in (scroll, pinch, double-click or +) and drag to pull apart close dots |
+| **The Fight Card** | The top four matchups, with the Tale of the Tape on the main event |
 | **Doomsday Watch** | The official Doomsday Clock, a live Beef Clock, a nuclear-test check, and every clock setting since 1947 |
-| **Trend & Beef Log** | The index over the last 7 days and every change of status or level |
-| **Search the Intel** | Type a word or words to get every report that mentions them: the last 48 hours from all the news feeds, defense press, OSINT channels, Reddit and conflict headlines from thousands of sites, newest first and filterable by kind. Press Search to add live worldwide results from GDELT's news search (last 3 days) |
-| **What moved it** | Under the gauge: how much the index moved and which ingredients pushed it, with the stories and matchups behind the move |
-| **The Wire** | Headlines grouped into stories, each tagged with a beef type and how many outlets carry it |
-| **OSINT scroller** | Latest English posts from public OSINT channels on Telegram, or links to them when none come through. Shown, never scored |
-| **On Reddit** | Newest posts from r/worldnews, r/geopolitics, r/CredibleDefense, r/UkrainianConflict and r/CombatFootage. Shown, never scored |
-| **Birds Up** | Military aircraft in the air: doomsday planes, bombers, tankers, spy planes, airlift |
-| **The Money** | Wall Street's fear gauge and the oil price |
-| **Do Not Pull Up List** | Countries the US State Department says not to travel to |
-| **Mother Nature's Hands** | Significant earthquakes and space weather. Shown, never scored |
-| **Receipts** | A status light per source, the method, and the back-test table |
+| **Trend** | The index over the last 7 days |
+| **The Wire** | The top stories |
+| **Where'd It Go?** | Links to every section that moved to another page. A "we moved" note at the top points to it until February 2027, or until dismissed |
+| **The Scorebug** | Once the gauge scrolls away, a strip pinned to the top with the index, TheseHandsCon and the main event. Tap it to jump back up |
+
+**The Wire** (`wire.html`): the full wire (smoke only or everything), the wider press, Reddit, both scrollers (WIRE and OSINT), search, plus Birds Up, The Money, Do Not Pull Up List and Mother Nature's Hands.
+
+**The Card** (`card.html`):
+
+| Panel | What it shows |
+| --- | --- |
+| **The Poster** | A typographic fight poster for the main event: billing, the two sides, date, and the region as the venue |
+| **The Fight Card** | All eight bouts, each linking to its deep dive, with the Tale of the Tape on the main event and the explainer |
+| **Press Conference** | The sharpest recent line from each side of the main event, with a link |
+| **Card Changes** | Which bouts debuted today and which fell off since the last card on file |
+| **The Undercard** | The next twelve real matchups below the main card's cutoff |
+| **Training Camp** | Build-up before anything pops: drills, call-ups, mobilizations, deployments, missile tests |
+| **The Cutman** | De-escalation on the table: ceasefire talk, negotiations, mediators, backchannels, off-ramps |
+
+**The Vault** (`vault.html`): The Streak, The Record Book (all-time high and low, longest run at each level, on this day in beef history, most days as the main event), The Beef Log (every level change), and Receipts with the method and the back-test table.
+
+**Deep dive** (`fight.html?p=RUS-UKR`): one page per matchup, driven by the pair in the address. Every bout on the card links to it. It has the poster, Tale of the Tape, Cornermen, Press Conference, Rematch History (the last day the pair closed at Swingin' or worse, with the index and TheseHandsCon that day), talk/flexin'/hands per day, Home Crowd (each side's own press, side by side), a 48-hour timeline, and a play-by-play of every report naming both sides.
 
 Birds Up, The Money and Do Not Pull Up List appear only when their feed answers.
 
@@ -73,6 +93,17 @@ The strongest of the first two leads. Relaxing a level needs the score 3 points 
 Three hard triggers set a minimum: US forces trading fire with any state means level 4 or tighter;
 the US trading blows with Russia, China or North Korea, or a nuclear test detected anywhere, means
 level 3 or tighter.
+
+## Fight night features: where the data comes from
+
+None of these change the index, TheseHandsCon or any score. They are built from data the collector already had, plus one hand-made file.
+
+- **Tale of the Tape** splits each matchup's talk / flexin' / hands by which side acted, using GDELT's actor 1 → actor 2 coding. The collector stores that split alongside the pair totals (`slot.o` in the GDELT store); the scored totals are untouched. Until a fresh 24 hours of slots carry the split, the tape shows the pair totals instead.
+- **Allies, Cornermen and Home Crowd** come from `public/curated.json`, a short hand-made list: allies, arms suppliers and treaty ties for about 30 countries, and which outlets and web addresses are each country's domestic press. It is labelled on the page as curated and approximate.
+- **Press Conference** has no article text or transcripts to work from, so a "statement" is a headline or channel post in which one side is named first and then speaks ("Zelensky says…", "Kremlin warns…"). Reddit is left out. If nothing fits, the panel hides.
+- **The Cutman and Training Camp** run two extra keyword lists from `lib/classify.mjs` (`signals()`) over the same 24 hours of headlines and posts. The Cutman only keeps finds that touch a matchup on today's card or read as an outright calm-down. Training Camp needs a military word in the headline and skips anything already Swingin' or worse (missile tests excepted).
+- **The Streak, Record Book, Card Changes and Rematch History** read a daily archive the collector now keeps in `state.json` and publishes as `public/history.json`: one entry per UTC day (the last reading of the day) with the index, its high and low, status, TheseHandsCon and the day's top 20 matchups, up to 400 days. The first run seeds it from the 7-day trend, so the record book starts with about a week of index history and builds card history from there.
+- **search.json** rows carry two more fields for the deep dive: the countries a headline names (`lib/geo.mjs`, `countriesIn()`) and whose domestic press it is.
 
 ## How the number is made
 
@@ -234,8 +265,12 @@ lib/gdelt.mjs          downloads GDELT event files and boils them down
 lib/classify.mjs       reads a headline: beef type, calm or not, nuclear or not; groups stories
 lib/geo.mjs            countries, regions, how much each matchup matters
 lib/score.mjs          every scale and scoring rule (pure functions)
-lib/csp.mjs            the page's Content Security Policy (script hashes)
-public/index.html      the whole dashboard in one file
+lib/csp.mjs            the pages' Content Security Policy (script hashes)
+public/index.html      the front page; wire.html, card.html, vault.html and fight.html are the other pages
+public/app.js          the page script all five pages share (each page draws the sections it has)
+public/style.css       the shared stylesheet
+public/curated.json    hand-made allies, arms suppliers, treaty ties and outlet home countries
+lib/extras.mjs         daily archive, streak, record book, card changes, Press Conference, Cutman and Camp lists
 public/count.js        GoatCounter's visitor-count script, served from the site
 scripts/calibrate.mjs  back-tests the scoring on archived GDELT days
 scripts/snapshot.mjs   bakes a reading into a standalone HTML file
@@ -251,15 +286,15 @@ test/                  tests for the classifier, GDELT handling, scoring and fee
 The live page counts visits with [GoatCounter](https://www.goatcounter.com): visitors per day, countries, referring sites, and screen sizes. It uses no cookies and keeps no IP addresses. Only the account owner can see the dashboard at `https://weinthisthang.goatcounter.com`.
 
 - **Skip your own visits:** open the live page once with `#toggle-goatcounter` on the end of the address. That browser stops counting until you do it again.
-- **Change the account:** edit the `data-goatcounter` address near the end of `public/index.html`, then run `npm run csp`. The security policy follows that address.
-- **Turn it off:** delete that `<script>` tag and run `npm run csp`.
+- **Change the account:** edit the `data-goatcounter` address near the end of each page in `public/`, then run `npm run csp`. The security policy follows that address.
+- **Turn it off:** delete that `<script>` tag from each page and run `npm run csp`.
 - Local copies (`npm start`, snapshots) are never counted.
 
 ## Security
 
 The page loads no third-party JavaScript: no A/B testing (such as Optimizely), no ad or tag scripts, and no npm packages. Its only outside file is the Google Fonts stylesheet. The visitor counter's script (`public/count.js`) is GoatCounter's own code, copied into this repo and served from the site, so no remote script ever runs. A Content Security Policy in `public/index.html` lets the browser run only the page's own inline scripts (each pinned by SHA-256 hash) and script files from the site itself. Data can be fetched only from the site, GDELT, and the GoatCounter address. Any other script added to the page is blocked. Headlines and posts from feeds are shown as text, never run.
 
-If you edit a `<script>` in `index.html`, run `npm run csp` to refresh the hashes. `npm test` fails until you do, so a stale hash can't blank the live page. If one ever slips through, the status line says "the security policy blocked this page's own script".
+Most of the page code lives in `public/app.js`, which the policy allows as a file from the site itself, so editing it needs no hash update. If you edit an inline `<script>` in one of the pages, run `npm run csp` to refresh the hashes (it updates every page). `npm test` fails until you do, so a stale hash can't blank the live page. If one ever slips through, the status line says "the security policy blocked this page's own script".
 
 ## Troubleshooting
 

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-tg7QpoXWt2Xsy91vIuBgpEAOM1JwNOlGP1Rk7+vB4mc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.gdeltproject.org https://weinthisthang.goatcounter.com; img-src 'self' data: https://weinthisthang.goatcounter.com; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Wire · We Beefin Index</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<script>
+// If the page code can't start (an error, a blocked script), say so on the page instead of hanging on
+// "Checking who's beefin…". Plain old JavaScript on purpose, so it runs even where the main script can't.
+(function () {
+  var START = 'Checking who';
+  function show(text) {
+    var el = document.getElementById('fresh'), dot = document.getElementById('dot');
+    if (!el || (el.textContent.indexOf(START) !== 0 && el.textContent.indexOf('Page error') !== 0)) return;
+    el.textContent = 'Page error: ' + text;
+    if (dot) dot.className = 'dot stale';
+  }
+  window.addEventListener('error', function (e) {
+    show(((e && e.message) || 'a script did not load') + (e && e.lineno ? ' (line ' + e.lineno + ')' : ''));
+  });
+  document.addEventListener('securitypolicyviolation', function (e) {
+    if (e.effectiveDirective && e.effectiveDirective.indexOf('script-src') === 0)
+      show('the security policy blocked this page\'s own script (line ' + e.lineNumber + '). Run npm run csp and redeploy.');
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    show(String((e && e.reason && (e.reason.message || e.reason)) || 'unknown'));
+  });
+})();
+</script>
+</head>
+<body data-page="wire">
+<div class="wrap" id="top">
+  <nav class="nav" aria-label="Pages"><a href="./">The Front Page</a><a href="wire.html" aria-current="page">The Wire</a><a href="card.html">The Card</a><a href="vault.html">The Vault</a></nav>
+  <div class="bar">
+    <strong>WE FIGHTING ERRR NAH?</strong>
+    <span id="utc">--:--:-- Zulu</span>
+    <span class="live"><span class="dot" id="dot"></span><span id="fresh">Checking who's beefin…</span></span>
+    <noscript><span class="note" style="color:var(--orange)">JavaScript is turned off for this site, so no reading can load. Turn it on in your browser's site settings.</span></noscript>
+  </div>
+  <div class="ticker" aria-label="Headline ticker"><span class="tag">WIRE</span><div class="lane"><div class="run" id="tick"></div></div></div>
+  <div class="ticker" aria-label="Posts from OSINT channels on Telegram"><span class="tag" style="color:var(--blue)">OSINT</span><div class="lane"><div class="run" id="xtick"></div></div></div>
+  <div class="alert" id="alert" hidden></div>
+  <section class="panel" aria-label="Search the news">
+    <header><h2>Search the Intel</h2><span class="note">Every report and OSINT post from the last 48 hours, plus a live worldwide news search</span></header>
+    <form class="search" id="qform" role="search">
+      <input id="q" type="search" placeholder="Venezuela, drone strike, Hormuz…" autocomplete="off" aria-label="Keyword search">
+      <button class="btn" type="submit">Search</button>
+    </form>
+    <div class="picks" id="picks"></div>
+    <div class="hits" id="hits" hidden></div>
+  </section>
+
+  <section class="panel" id="wirepanel">
+    <header><h2>The Wire</h2>
+      <div class="tabs"><button id="tab-hot" aria-pressed="true">Smoke only</button><button id="tab-all" aria-pressed="false">Everything</button></div>
+    </header>
+    <p class="note" id="wirenote"></p>
+    <ul class="wire" id="wire"></ul>
+    <div id="presswrap" hidden>
+      <h3 style="margin-bottom:8px">Also running widely</h3>
+      <ul class="wire" id="press"></ul>
+    </div>
+    <div id="redditwrap" hidden>
+      <h3>On Reddit</h3>
+      <p class="note" id="redditnote" style="margin-bottom:8px"></p>
+      <ul class="wire" id="reddit"></ul>
+    </div>
+  </section>
+
+  <div class="grid fit" id="extras">
+    <section class="panel" id="skypanel" hidden>
+      <header><h2>Birds Up</h2><span class="note">Military aircraft broadcasting right now</span></header>
+      <div class="tiles" id="sky"></div>
+      <p class="note" id="skynote"></p>
+    </section>
+    <section class="panel" id="moneypanel" hidden>
+      <header><h2>The Money</h2><span class="note">Daily closes</span></header>
+      <div class="tiles" id="money"></div>
+    </section>
+    <section class="panel" id="advpanel" hidden>
+      <header><h2>Do Not Pull Up List</h2><span class="note">US State Department, Level 4</span></header>
+      <div class="tags" id="adv"></div>
+      <div class="stack" id="advfresh" style="gap:4px"></div>
+    </section>
+    <section class="panel">
+      <header><h2>Mother Nature's Hands</h2><span class="note">Shown, never counted in the index</span></header>
+      <div class="stack" id="nature"></div>
+    </section>
+  </div>
+  </div>
+
+  <footer class="foot">
+    <p>For entertainment and situational awareness. Not a prediction, not advice, and nothing here is an official alert level.</p>
+    <p><a href="./">The Front Page</a> · <a href="wire.html">The Wire</a> · <a href="card.html">The Card</a> · <a href="vault.html">The Vault</a> · <a href="vault.html#receipts">How the number is made</a></p>
+  </footer>
+</div>
+<script src="app.js"></script>
+<!-- Visitor counter (GoatCounter: daily visitors, countries, referrers; no cookies, no IPs kept).
+     count.js is GoatCounter's own script, served from this site so no outside code runs here. -->
+<script data-goatcounter="https://weinthisthang.goatcounter.com/count" async src="count.js"></script>
+</body>
+</html>

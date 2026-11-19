@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-tg7QpoXWt2Xsy91vIuBgpEAOM1JwNOlGP1Rk7+vB4mc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.gdeltproject.org https://weinthisthang.goatcounter.com; img-src 'self' data: https://weinthisthang.goatcounter.com; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Card · We Beefin Index</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<script>
+// If the page code can't start (an error, a blocked script), say so on the page instead of hanging on
+// "Checking who's beefin…". Plain old JavaScript on purpose, so it runs even where the main script can't.
+(function () {
+  var START = 'Checking who';
+  function show(text) {
+    var el = document.getElementById('fresh'), dot = document.getElementById('dot');
+    if (!el || (el.textContent.indexOf(START) !== 0 && el.textContent.indexOf('Page error') !== 0)) return;
+    el.textContent = 'Page error: ' + text;
+    if (dot) dot.className = 'dot stale';
+  }
+  window.addEventListener('error', function (e) {
+    show(((e && e.message) || 'a script did not load') + (e && e.lineno ? ' (line ' + e.lineno + ')' : ''));
+  });
+  document.addEventListener('securitypolicyviolation', function (e) {
+    if (e.effectiveDirective && e.effectiveDirective.indexOf('script-src') === 0)
+      show('the security policy blocked this page\'s own script (line ' + e.lineNumber + '). Run npm run csp and redeploy.');
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    show(String((e && e.reason && (e.reason.message || e.reason)) || 'unknown'));
+  });
+})();
+</script>
+</head>
+<body data-page="card">
+<div class="wrap" id="top">
+  <nav class="nav" aria-label="Pages"><a href="./">The Front Page</a><a href="wire.html">The Wire</a><a href="card.html" aria-current="page">The Card</a><a href="vault.html">The Vault</a></nav>
+  <div class="bar">
+    <strong>WE FIGHTING ERRR NAH?</strong>
+    <span id="utc">--:--:-- Zulu</span>
+    <span class="live"><span class="dot" id="dot"></span><span id="fresh">Checking who's beefin…</span></span>
+    <noscript><span class="note" style="color:var(--orange)">JavaScript is turned off for this site, so no reading can load. Turn it on in your browser's site settings.</span></noscript>
+  </div>
+  <div class="alert" id="alert" hidden></div>
+  <section class="poster" id="poster" hidden></section>
+
+    <section class="panel">
+      <header><h2>The Fight Card</h2><span class="note">Country vs country, last 24h · tap a bout for its deep dive</span></header>
+      <span class="key"><span><i class="k-talk"></i>talk</span><span><i class="k-flex"></i>flexin' (threats, sanctions, troop moves)</span><span><i class="k-hands"></i>hands (strikes, clashes, attacks)</span></span>
+      <div class="stack" id="card"></div>
+      <details class="explain" id="cardhelp">
+        <summary>What the fight card means</summary>
+        <dl class="terms">
+          <dt>The numbers</dt><dd>Each number is a count of <b>news articles</b> in the last 24 hours that report one country doing that thing to the other, as coded by the GDELT project from news worldwide. It is not a count of attacks: one big strike can be reported by hundreds of articles. Use it to compare matchups, not as a casualty count.</dd>
+          <dt>Bar: Talk (blue)</dt><dd>Words only: statements, accusations, demands, appeals, criticism, meetings and negotiations.</dd>
+          <dt>Bar: Flexin' (yellow)</dt><dd>Pressure short of shooting: threats and ultimatums, sanctions and embargoes, cutting ties or expelling diplomats, troop and naval movements, blockades, military drills, alerts.</dd>
+          <dt>Bar: Hands (red)</dt><dd>Physical force: strikes and bombardments, attacks on bases or ships, assassinations, seizures, and clashes.</dd>
+          <dt>Clashes</dt><dd>Armed forces of the two sides actually firing on each other: firefights, skirmishes, border shootouts, an aircraft or drone being shot down. A one-sided strike counts as "hands" too, but a clash means both sides are engaging.</dd>
+          <dt>An hour</dt><dd>Hands articles per hour over the last 24 hours. Above about 6 an hour is war-level coverage.</dd>
+          <dt>Heating up / quieter right now</dt><dd>The last 6 hours are running well above, or well below, the 24-hour pace.</dd>
+          <dt>Main event, co-main, main card</dt><dd>Billing order: the hottest matchup is the main event.</dd>
+          <dt>The Undercard</dt><dd>The next twelve matchups below the main card's eight: real fights, just quieter today.</dd>
+          <dt>Tale of the Tape</dt><dd>The main event side by side. Talk, flexin' and hands are split by which side acted on the other, as GDELT codes it, so the two columns add up to the bout's totals. Allies come from a short hand-made list.</dd>
+          <dt>Badge: Talkin' Spicy</dt><dd>Mostly words. Tension, but nothing physical.</dd>
+          <dt>Badge: Flexin'</dt><dd>At least a third of the coverage is threats or pressure moves, or the pressure is heavy.</dd>
+          <dt>Badge: Swingin'</dt><dd>Force is being used: at least a quarter of the coverage is hands, at half an article an hour or more.</dd>
+          <dt>Badge: Full Send</dt><dd>Sustained, war-level fighting: 6 or more hands articles an hour.</dd>
+          <dt>Badge: Nuclear stakes</dt><dd>A fight here could go nuclear because <b>both sides have nuclear weapons</b> (US vs Russia, India vs Pakistan), or because a nuclear power is squaring off with a country the US is <b>treaty-bound to defend</b> (Russia vs a NATO member, China vs Taiwan or Japan, North Korea vs South Korea). It does not mean nuclear weapons are in use.</dd>
+          <dt>Badge: Big dog involved</dt><dd>One side has nuclear weapons (US, Russia, China, UK, France, India, Pakistan, Israel, North Korea), or Iran faces a nuclear power. Serious, but a step below nuclear stakes.</dd>
+          <dt>Badge: Regional</dt><dd>Neither side has nuclear weapons. Deadly, but less able to spread into a world war.</dd>
+          <dt>Not shown</dt><dd>Allies bickering (US vs UK, say) and matchups with fewer than 6 articles, even on the undercard.</dd>
+        </dl>
+      </details>
+    </section>
+
+  <div class="grid even">
+  <section class="panel" id="presser" hidden>
+    <header><h2>Press Conference</h2><span class="note" id="pressernote">Main event · the sharpest recent line from each side</span></header>
+    <div class="corner2" id="presserbody"></div>
+    <p class="note">Pulled from headlines and channel posts where that side is the one talking, not from full transcripts. Follow the link for the whole story.</p>
+  </section>
+  <section class="panel" id="changespanel">
+    <header><h2>Card Changes</h2><span class="note" id="changesnote">Today against the last card on file</span></header>
+    <div class="stack" id="changes"></div>
+  </section>
+  </div>
+
+  <section class="panel" id="undercardpanel">
+    <header><h2>The Undercard</h2><span class="note">Real matchups just below the main card's cutoff</span></header>
+    <div class="under two" id="undercard"></div>
+  </section>
+  <div class="grid even">
+  <section class="panel" id="camppanel">
+    <header><h2>Training Camp</h2><span class="note">Build-up before anything pops · last 24h</span></header>
+    <ul class="wire one" id="camp"></ul>
+    <p class="note">Drills, call-ups, deployments and missile tests spotted in the headlines. Leading indicators only: most camps never turn into a fight. For entertainment and situational awareness, not a prediction.</p>
+  </section>
+  <section class="panel" id="cutpanel">
+    <header><h2>The Cutman</h2><span class="note">De-escalation on the table · last 24h</span></header>
+    <ul class="wire one" id="cutman"></ul>
+    <p class="note">Ceasefire talk, negotiations, mediators, backchannels and off-ramps, for matchups on today's card or headlines that read as an outright calm-down.</p>
+  </section>
+  </div>
+  <footer class="foot">
+    <p>For entertainment and situational awareness. Not a prediction, not advice, and nothing here is an official alert level.</p>
+    <p><a href="./">The Front Page</a> · <a href="wire.html">The Wire</a> · <a href="card.html">The Card</a> · <a href="vault.html">The Vault</a> · <a href="vault.html#receipts">How the number is made</a></p>
+  </footer>
+</div>
+<script src="app.js"></script>
+<!-- Visitor counter (GoatCounter: daily visitors, countries, referrers; no cookies, no IPs kept).
+     count.js is GoatCounter's own script, served from this site so no outside code runs here. -->
+<script data-goatcounter="https://weinthisthang.goatcounter.com/count" async src="count.js"></script>
+</body>
+</html>
