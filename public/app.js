@@ -402,7 +402,6 @@
       }).join('')}</ul>` : `<p class="empty">Nothing in the last 48 hours mentions "${esc(q)}"${liveState === 'loading' ? '. Still checking worldwide news…' : '.'}</p>`) +
       (list.length > shown ? `<button class="more btn" type="button" id="moreres">Show ${Math.min(40, list.length - shown)} more of ${list.length}</button>` : '') +
       (pageHits.length ? `<p class="note">On the dashboard: ${pageHits.join(' · ')}</p>` : '');
-    try { localStorage.setItem('beef-q', q); } catch { /* per-viewer convenience only */ }
   }
 
   function fillTicker(el, items, pxPerSec) {
@@ -915,7 +914,8 @@
     if (tab) { kindFilter = tab.dataset.kind; shown = 40; runSearch(); return; }
     if (e.target.id === 'moreres') { shown += 40; runSearch(); }
   });
-  try { const saved = localStorage.getItem('beef-q'); if (saved) $('q').value = saved; } catch { /* ignore */ }
+  // The search box always starts empty. (It used to remember the last search; clear what older visits saved.)
+  try { localStorage.removeItem('beef-q'); } catch { /* private mode */ }
   $('tab-hot').onclick = () => { wireAll = false; if (data) drawWire(data); };
   $('tab-all').onclick = () => { wireAll = true; if (data) drawWire(data); };
   // map zoom + pan: wheel, pinch, drag, double-click, buttons
